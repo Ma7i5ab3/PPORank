@@ -11,7 +11,7 @@ currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
 sys.path.append(parentdir)
 
-GEX_fn = "./GDSC_ALL/GDSC_GEX.npz"
+GEX_fn = "./data/GDSC_ALL/GDSC_GEX.npz"
 Data_All = np.load(GEX_fn)
 
 cl_feature_arr = Data_All['X']  # (962,11737)
@@ -26,7 +26,7 @@ P = cell_ids
 Y = pd.DataFrame(Y, index=cell_ids, columns=drug_lists)
 X = pd.DataFrame(cl_feature_arr, index=cell_ids, columns=gene_symbols)  # 【962，17737】
 
-toxic_drug_fn = "GDSC_ALL/toxic_drug_ids.csv"
+toxic_drug_fn = "data/GDSC_ALL/toxic_drug_ids.csv"
 toxic_drugs = pd.read_csv(toxic_drug_fn)
 toxic_drugs = toxic_drugs['drug_id']
 toxic_drugs = np.array([str(id) for id in toxic_drugs])

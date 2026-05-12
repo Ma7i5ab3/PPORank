@@ -36,7 +36,7 @@ from sklearn.preprocessing import StandardScaler
 
 def parse_args():
     parser = argparse.ArgumentParser(description="prepare data split for CV with both FULL and KEEPK method")
-    parser.add_argument("--data_dir", default="GDSC_ALL")
+    parser.add_argument("--data_dir", default="data/GDSC_ALL")
     parser.add_argument("--seed", type=int, default=1234)
     parser.add_argument("--Source", type=str, default="GDSC", help="data source to analysis")
     parser.add_argument("--gene_type", type=str, default="GEX", help="among GEX, WES, CNV, MET")

@@ -29,8 +29,8 @@ def tcga_results(brca_df, pred_prefix, test_ids, lambdas, gamma, k, nfolds, verb
     brca_samples = np.array(brca_df.index)
     # test ids have 1080 and brca has 1097
     merged = intersect_index(test_ids, brca_samples)
-    test_keep_index = np.array(merged['index1'].values, dtype=np.int)
-    brca_keep_index = np.array(merged['index2'].values, dtype=np.int)
+    test_keep_index = np.array(merged['index1'].values, dtype=int)
+    brca_keep_index = np.array(merged['index2'].values, dtype=int)
     # HER2 column has pos and neg
     her2_pos = np.array(brca_df.loc[:, HER2])[brca_keep_index] == POSITIVE  # total 163
     her2_neg = np.array(brca_df.loc[:, HER2])[brca_keep_index] == NEGATIVE
@@ -145,7 +145,7 @@ def tcga_results(brca_df, pred_prefix, test_ids, lambdas, gamma, k, nfolds, verb
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '-data_fn', default='GDSC_ALL/TCGA_BRCA.npz',
+        '-data_fn', default='data/GDSC_ALL/TCGA_BRCA.npz',
         type=str)
     parser.add_argument('-p', '--prefix', type=str,
                         default='KRL_TCGA_BRCA_')
@@ -156,7 +156,7 @@ def main():
     parser.add_argument('-n', '--nfolds', type=int, default=3)
     parser.add_argument(
         '-b', '--brca_df', type=str,
-        default='GDSC_ALL/TCGA_BRCA_clinical.csv.gz')
+        default='data/GDSC_ALL/TCGA_BRCA_clinical.csv.gz')
     args = parser.parse_args()
 
     data = np.load(args.data_fn)

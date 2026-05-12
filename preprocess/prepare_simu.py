@@ -17,7 +17,7 @@ import time
 def parse_args():
     parser = argparse.ArgumentParser(
         description="prepare data split of simulated data for CV with both FULL and KEEPK method")
-    parser.add_argument("--data_dir", default="SimuData")
+    parser.add_argument("--data_dir", default="data/SimuData")
     parser.add_argument("--seed", type=int, default=1234)
     parser.add_argument("--Source", type=str, default="SimuData", help="data source to analysis")
     parser.add_argument("--scenarios", default="linear,quad,exp", help="can be linear, quad, exp")

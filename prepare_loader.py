@@ -18,8 +18,6 @@ from os import path
 from pathlib import Path
 
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, MaxAbsScaler
-from pygments.lexers import r
-
 import torch
 import numpy as np
 import os

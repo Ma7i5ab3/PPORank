@@ -33,7 +33,7 @@ def main():
             if line.startswith("http://") or line.startswith("https://"):
                 urls.append(line[:-1])
 
-    data_dir = os.getcwd()+"/GDSC_ALL"
+    data_dir = os.getcwd()+"/data/GDSC_ALL"
     print(data_dir)
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
@@ -65,7 +65,7 @@ def main():
     GEX_cell_ids = np.array(GEX.columns, dtype='str')
     for i, cell_id in enumerate(GEX_cell_ids):
         GEX_cell_ids[i] = cell_id[5:]
-    GEX = np.array(GEX.values, dtype=np.float).T  # (1018,17737)
+    GEX = np.array(GEX.values, dtype=float).T  # (1018,17737)
     logger.info("the GEX data has dims {}, {}".format(GEX.shape[0], GEX.shape[1]))
 
     print('read whole exome sequencing data')
@@ -75,7 +75,7 @@ def main():
     WES_CG = np.array(WES['CG'], dtype='str')
     WES = WES.drop(['CG'], axis=1)
     WES_cell_ids = np.array(WES.columns, dtype='str')
-    WES = np.array(WES.values, dtype=np.int).T  # (961,300)
+    WES = np.array(WES.values, dtype=int).T  # (961,300)
     logger.info("the WEX data has dims {}, {}".format(WES.shape[0], WES.shape[1]))
 
     print("Read Copy number dataset")
@@ -150,10 +150,10 @@ def main():
     # IC50_drug_ids (265) threshold_drug_ids (265)
     # Normalize IC50 by the threshold
     merged = intersect_index(IC50_drug_ids, threshold_drug_ids)
-    IC50_keep_index = np.array(merged['index1'].values, dtype=np.int)
+    IC50_keep_index = np.array(merged['index1'].values, dtype=int)
     IC50_drug_ids = IC50_drug_ids[IC50_keep_index]
     IC50 = IC50[:, IC50_keep_index]
-    threshold_keep_index = np.array(merged['index2'].values, dtype=np.int)
+    threshold_keep_index = np.array(merged['index2'].values, dtype=int)
     threshold_drug_ids = threshold_drug_ids[threshold_keep_index]
     threshold = threshold[threshold_keep_index]
 
@@ -170,8 +170,8 @@ def main():
 
     # Save the GEX features and normalized IC50 dataset
     merged = intersect_index(GEX_cell_ids, IC50_cell_ids)  # 1018, 990
-    GEX_keep_index = np.array(merged['index1'].values, dtype=np.int)
-    IC50_keep_index = np.array(merged['index2'].values, dtype=np.int)
+    GEX_keep_index = np.array(merged['index1'].values, dtype=int)
+    IC50_keep_index = np.array(merged['index2'].values, dtype=int)
     GEX = GEX[GEX_keep_index]  # 962
     GEX_cell_ids = GEX_cell_ids[GEX_keep_index]
     GEX_cell_names = IC50_cell_names[IC50_keep_index]
@@ -183,8 +183,8 @@ def main():
 
     # Save the WES features and normalized IC50 dataset
     merged = intersect_index(WES_cell_ids, IC50_cell_ids)
-    WES_keep_index = np.array(merged['index1'].values, dtype=np.int)
-    IC50_keep_index = np.array(merged['index2'].values, dtype=np.int)
+    WES_keep_index = np.array(merged['index1'].values, dtype=int)
+    IC50_keep_index = np.array(merged['index2'].values, dtype=int)
     WES = WES[WES_keep_index]
     WES_cell_ids = WES_cell_ids[WES_keep_index]
     WES_cell_names = IC50_cell_names[IC50_keep_index]
@@ -196,8 +196,8 @@ def main():
 
     # Save the CNV features and normalized IC50 dataset
     merged = intersect_index(CNV_cell_ids, IC50_cell_ids)
-    CNV_keep_index = np.array(merged['index1'].values, dtype=np.int)
-    IC50_keep_index = np.array(merged['index2'].values, dtype=np.int)
+    CNV_keep_index = np.array(merged['index1'].values, dtype=int)
+    IC50_keep_index = np.array(merged['index2'].values, dtype=int)
     CNV = CNV[CNV_keep_index]
     CNV_cell_ids = CNV_cell_ids[CNV_keep_index]
     CNV_cell_names = IC50_cell_names[IC50_keep_index]
@@ -209,8 +209,8 @@ def main():
 
     # Save the MET features and normalized IC50 dataset
     merged = intersect_index(MET_cell_ids, IC50_cell_ids)
-    MET_keep_index = np.array(merged['index1'].values, dtype=np.int)
-    IC50_keep_index = np.array(merged['index2'].values, dtype=np.int)
+    MET_keep_index = np.array(merged['index1'].values, dtype=int)
+    IC50_keep_index = np.array(merged['index2'].values, dtype=int)
     MET = MET[MET_keep_index]
     MET_cell_ids = MET_cell_ids[MET_keep_index]
     MET_cell_names = IC50_cell_names[IC50_keep_index]

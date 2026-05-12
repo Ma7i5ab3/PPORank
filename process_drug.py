@@ -18,7 +18,7 @@ def is_not_float(string_list):
         return True
 
 
-folder = "GDSC_ALL/Drugs/"
+folder = "data/GDSC_ALL/Drugs/"
 
 
 def load_drug_list():

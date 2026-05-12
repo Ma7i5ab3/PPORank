@@ -124,8 +124,8 @@ def get_args():
         help='number of environment steps to train (default: 10e6)')
     parser.add_argument(
         '--Data',
-        default="GDSC_ALL",
-        help='data environment to train on (default: GDSC_ALL)')
+        default="data/GDSC_ALL",
+        help='data environment to train on (default: data/GDSC_ALL)')
     parser.add_argument(
         '--simu_N',
         default=1000,

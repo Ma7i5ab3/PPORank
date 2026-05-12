@@ -10,7 +10,6 @@ import gzip
 import math
 from tqdm import tqdm, trange
 import matplotlib.pyplot as plt
-from _testcapi import raise_exception
 
 
 def check_gpu():
@@ -41,7 +40,7 @@ def read_PROP(data_name, prop, CV="CV", i=0, j=None):
     data_dir = os.path.join(os.getcwd(), data_name, CV, "FULL", "Fold{}".format(i))
 
     if not j:
-        if data_name != "GDSC_ALL":
+        if "GDSC_ALL" not in data_name:
             # only with train and test data
             train_data = np.load(data_dir+"/FulltrainDf.npz")
             Xtrain = train_data["Xtrain"]
@@ -49,7 +48,7 @@ def read_PROP(data_name, prop, CV="CV", i=0, j=None):
             test_data = np.load(data_dir+"/FulltestDf.npz")
             Xtest = test_data['Xtest']
             Ytest = test_data['Ytest']
-        elif data_name == "GDSC_ALL":
+        elif "GDSC_ALL" in data_name:
 
             Ytrain_full = pd.read_csv(os.path.join(data_dir, "YtrainDf.csv"), index_col=0)
             Ytest = pd.read_csv(os.path.join(data_dir, "YtestDf.csv"), index_col=0)
@@ -82,7 +81,7 @@ def read_FULL(data_name, CV="CV", i=0, j=None):
     data_dir = os.path.join(os.getcwd(), data_name, CV, "FULL", "Fold{}".format(i))
 
     if not j:
-        if data_name != "GDSC_ALL":
+        if "GDSC_ALL" not in data_name:
             # only with train and test data
             train_data = np.load(data_dir+"/FulltrainDf.npz")
             Xtrain = train_data["Xtrain"]
@@ -90,7 +89,7 @@ def read_FULL(data_name, CV="CV", i=0, j=None):
             test_data = np.load(data_dir+"/FulltestDf.npz")
             Xtest = test_data['Xtest']
             Ytest = test_data['Ytest']
-        elif data_name == "GDSC_ALL":
+        elif "GDSC_ALL" in data_name:
 
             Ytrain = pd.read_csv(os.path.join(data_dir, "YtrainDf.csv"), index_col=0)
             Ytest = pd.read_csv(os.path.join(data_dir, "YtestDf.csv"), index_col=0)
@@ -110,7 +109,7 @@ def read_FULL(data_name, CV="CV", i=0, j=None):
 
 def open_file(filename, mode='r', compresslevel=9):
     if mode not in ['r', 'rb', 'a', 'ab', 'w', 'wb']:
-        raise_exception('file mode not supported:', mode)
+        raise ValueError('file mode not supported: {}'.format(mode))
     if filename.endswith('.gz') or (not os.path.exists(filename) and os.path.exists(filename + '.gz')):
         # gzip automatically adds 'b' to the 'r', 'a', and 'w' modes
         return gzip.open(filename if filename.endswith('.gz') else filename + '.gz', mode, compresslevel)

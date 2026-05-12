@@ -10,8 +10,14 @@ import Reward_utils
 import torch
 import logging
 import utils
-from Baseline.CaDRRes import predict_CaDRRes
 from results import get_result_filename
+
+
+def predict_CaDRRes(ss_df, cl_features_df, Xtest, ss_df_test, X, WP, WQ, mu, b_p, b_q, err_list, epoch):
+    """Predict drug responses for test cell lines using the fitted MF model."""
+    Xtest = np.array(Xtest)
+    pred = np.matmul(np.matmul(Xtest, WP), WQ.T) + mu + b_q
+    return pred
 
 import argparse
 logger = logging.getLogger(__name__)
@@ -24,7 +30,7 @@ logger = logging.getLogger(__name__)
 ###########
 def parse_args():
     parser = argparse.ArgumentParser(description="Preprocess data from GDSC and CCLE")
-    parser.add_argument("--Data", default="CCLE",
+    parser.add_argument("--Data", default="data/CCLE",
                         help="data name ")
     # contains a matrix of IC50s where rows are cell lines and columns are drugs
     parser.add_argument("--ss_name", default="_all_abs_ic50_bayesian_sigmoid.csv", help="log IC50 response matrix")
@@ -493,10 +499,10 @@ if __name__ == "__main__":
     # GDSC_inds(args)
     #args = parse_args()
     #ss_df, cl_features_df, cl_list = ss_file_save(args.Data, args.ss_name, args.cl_feature_fname, args.drug_list_fname)
-    Xtrain, Xtest, Ytrain, Ytest = utils.read_FULL("GDSC_ALL")
+    Xtrain, Xtest, Ytrain, Ytest = utils.read_FULL("data/GDSC_ALL")
 
-    Response_decompose(Ytrain, Xtrain, 50000, 3e-4, 100, "GDSC_ALL")
-    Save_feautures_mat("GDSC_ALL", 100)
+    Response_decompose(Ytrain, Xtrain, 50000, 3e-4, 100, "data/GDSC_ALL")
+    Save_feautures_mat("data/GDSC_ALL", 100)
    # Xtrain,Xtest,Ytrain,Ytest,WP,drug_embs = load_PQ_WP_embs(args.Data,args.f)
     # X_train, X_test, Y_train, Y_test = utils.read_FULL("GDSC", "CV",i=0)
     # ss_df=pd.DataFrame(X_train)
