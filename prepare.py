@@ -143,11 +143,16 @@ def Split_Data():
         #     args.data_dir, args.gene_list_fn))  # 1856 essential gens
         # ess_genes_common = np.intersect1d(ess_genes_list, list(gene_symbols))  # 1610 common essential genes
 
-        ess_genes_list = pd.read_csv(os.path.join(os.getcwd(), args.data_dir, args.gene_list_fn),
-                                     index_col=0, header=0, names=["genes"])
-        ess_genes_common = list(set(X.columns) & set(ess_genes_list['genes']))
-
-        X = X[ess_genes_common]
+        gene_list_path = os.path.join(os.getcwd(), args.data_dir, args.gene_list_fn)
+        if os.path.exists(gene_list_path):
+            ess_genes_list = pd.read_csv(gene_list_path, index_col=0, header=0, names=["genes"])
+            ess_genes_common = list(set(X.columns) & set(ess_genes_list['genes']))
+            X = X[ess_genes_common]
+            logger.info("Essential genes file found: filtering to {} genes".format(len(ess_genes_common)))
+        else:
+            ess_genes_list = None
+            logger.info("Essential genes file not found ({}): using all {} genes".format(
+                gene_list_path, X.shape[1]))
         cell_names_to_ids_map = {cell_names[i]: cell_ids[i] for i in range(len(cell_ids))}
         cell_ids_to_names_map = {cell_ids[i]: cell_names[i] for i in range(len(cell_ids))}
 
@@ -165,8 +170,10 @@ def Split_Data():
             X_log2_mean_fc_exp_df.shape[0],
             X_log2_mean_fc_exp_df.shape[1]))
         logger.info("calculate kernel features based on pearson correlation")
+        gene_list_for_kernel = list(ess_genes_list['genes']) if ess_genes_list is not None \
+            else list(X_log2_mean_fc_exp_df.index)
         kernel_feature_df = pp_gene_original.calculate_kernel_feature(
-            X_log2_mean_fc_exp_df, X_log2_mean_fc_exp_df, list(ess_genes_list['genes']))
+            X_log2_mean_fc_exp_df, X_log2_mean_fc_exp_df, gene_list_for_kernel)
         kernel_feature_df.to_csv(os.path.join(directory, "kernel_feature.csv"))
         # we have already calculate the overlap int loading data, no need to doubble check list again
 
@@ -433,6 +440,5 @@ def Pretrained_MF_split(iters=20000):
 
 
 if __name__ == "__main__":
-    # Split_Data()
-    Pretrained_MF_split()
+    Split_Data()
     # Load_from_decompose()

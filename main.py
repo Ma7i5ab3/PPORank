@@ -82,7 +82,7 @@ def main(Debug=False):
 
     model_save_dir = os.path.join(os.getcwd(), args.saved_dir, model_name)  # checkpoint saving directory
     utils.create_save_dir(model_save_dir)
-    # writer = SummaryWriter('runs/'+model_name)
+    writer = SummaryWriter('runs/'+model_name)
     logger.info('model saved directory {}'.format(model_save_dir))
 
     if args.analysis == "noise" or args.analysis == 'sparse':
@@ -120,7 +120,9 @@ def main(Debug=False):
 
     if args.algo == 'ppo':
 
-        fp = open("./results/{}/{}_PPOresult.txt".format(args.Data, model_name), "w")
+        results_dir = "./results/{}".format(args.Data)
+        os.makedirs(results_dir, exist_ok=True)
+        fp = open("{}/{}_PPOresult.txt".format(results_dir, model_name), "w")
         fp.write("epoch,train_ndcg,train_rewards,test_ndcg,test_rewards\n")
         logger.info("results saved file name is ./results/{}/{}_PPOresult.txt".format(args.Data, model_name))
         agent = PPO(args, N, M, P, cell_dim, WP, drug_embs, device, drug_mean=drug_mean, overall_mean=overall_mean)
