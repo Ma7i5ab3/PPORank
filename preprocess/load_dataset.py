@@ -29,7 +29,6 @@ def main():
         os.makedirs(data_dir)
 
     # Download raw files only if not already present locally.
-    # If the key GEX file already exists, skip all downloads.
     gex_file_check = os.path.join(data_dir, 'Cell_line_RMA_proc_basalExp.txt')
     if os.path.exists(gex_file_check):
         logger.info("Raw data files already present in {}, skipping download.".format(data_dir))
@@ -52,9 +51,9 @@ def main():
                     r.extractall(data_dir)
 
     print("processing the GDSC data set")
-    print("gene expression data")
 
-    # https://www.cancerrxgene.org/gdsc1000/GDSC1000_WebResources//Data/preprocessed/Cell_line_RMA_proc_basalExp.txt.zip
+    # --- READ GEX ---
+    print("gene expression data")
     GEX_file = os.path.join(data_dir, 'Cell_line_RMA_proc_basalExp.txt')
     GEX = pd.read_csv(GEX_file, sep='\t')
     GEX_gene_symbols = np.array(GEX['GENE_SYMBOLS'], dtype='str')
@@ -65,6 +64,9 @@ def main():
     GEX = np.array(GEX.values, dtype=float).T  # (1018,17737)
     logger.info("the GEX data has dims {}, {}".format(GEX.shape[0], GEX.shape[1]))
 
+    # --- READ WES (optional) ---
+    WES_cell_ids = None
+    WES_CG = None
     WES_file = os.path.join(data_dir, 'CellLines_CG_BEMs/PANCAN_SEQ_BEM.txt')
     if os.path.exists(WES_file):
         print('read whole exome sequencing data')
@@ -73,22 +75,14 @@ def main():
         WES = WES.drop(['CG'], axis=1)
         WES_cell_ids = np.array(WES.columns, dtype='str')
         WES = np.array(WES.values, dtype=int).T  # (961,300)
-        logger.info("the WEX data has dims {}, {}".format(WES.shape[0], WES.shape[1]))
-
-        merged = intersect_index(WES_cell_ids, IC50_cell_ids)
-        WES_keep_index = np.array(merged['index1'].values, dtype=int)
-        IC50_keep_index = np.array(merged['index2'].values, dtype=int)
-        WES = WES[WES_keep_index]
-        WES_cell_ids = WES_cell_ids[WES_keep_index]
-        WES_cell_names = IC50_cell_names[IC50_keep_index]
-        np.savez('%s/GDSC_WES.npz' % data_dir, X=WES, Y=IC50_norm[IC50_keep_index],
-                 cell_ids=WES_cell_ids, cell_names=WES_cell_names,
-                 drug_ids=IC50_drug_ids, drug_names=IC50_drug_names, WES_CG=WES_CG)
-        logger.info('Whole-exome sequencing (WES) dataset: {} cell lines, {} features, {} drugs'.format(
-            WES.shape[0], WES.shape[1], IC50_norm.shape[1]))
+        logger.info("the WES data has dims {}, {}".format(WES.shape[0], WES.shape[1]))
     else:
-        logger.info("WES file not found, skipping: {}".format(WES_file))
+        logger.warning("WES file not found, skipping: {}".format(WES_file))
+        WES = None
 
+    # --- READ CNV (optional) ---
+    CNV_cell_ids = None
+    CNV_cna = None
     CNV_file = os.path.join(data_dir, 'CellLine_CNV_BEMs/PANCAN_CNA_BEM.rdata.txt')
     if os.path.exists(CNV_file):
         print("Read Copy number dataset")
@@ -98,21 +92,13 @@ def main():
         CNV_cna = np.array(CNV.columns, dtype='str')
         CNV = np.array(CNV.values, dtype=int)  # (996,425)
         logger.info("the CNV data has dims {}, {}".format(CNV.shape[0], CNV.shape[1]))
-
-        merged = intersect_index(CNV_cell_ids, IC50_cell_ids)
-        CNV_keep_index = np.array(merged['index1'].values, dtype=int)
-        IC50_keep_index = np.array(merged['index2'].values, dtype=int)
-        CNV = CNV[CNV_keep_index]
-        CNV_cell_ids = CNV_cell_ids[CNV_keep_index]
-        CNV_cell_names = IC50_cell_names[IC50_keep_index]
-        np.savez('%s/GDSC_CNV.npz' % data_dir, X=CNV, Y=IC50_norm[IC50_keep_index],
-                 cell_ids=CNV_cell_ids, cell_names=CNV_cell_names,
-                 drug_ids=IC50_drug_ids, drug_names=IC50_drug_names, CNV_cna=CNV_cna)
-        logger.info('Copy number variation (CNV) dataset: {} cell lines, {} features, {} drugs'.format(
-            CNV.shape[0], CNV.shape[1], IC50_norm.shape[1]))
     else:
-        logger.info("CNV file not found, skipping: {}".format(CNV_file))
+        logger.warning("CNV file not found, skipping: {}".format(CNV_file))
+        CNV = None
 
+    # --- READ MET (optional) ---
+    MET_cell_ids = None
+    MET_met = None
     MET_file = os.path.join(data_dir, 'METH_CELLLINES_BEMs/PANCAN.txt')
     if os.path.exists(MET_file):
         print("Read Methylation dataset")
@@ -122,27 +108,16 @@ def main():
         MET_cell_ids = np.array(MET.columns, dtype='str')
         MET = np.array(MET.values, dtype=int).T  # (790,378)
         logger.info("the MET data has dims {}, {}".format(MET.shape[0], MET.shape[1]))
-
-        merged = intersect_index(MET_cell_ids, IC50_cell_ids)
-        MET_keep_index = np.array(merged['index1'].values, dtype=int)
-        IC50_keep_index = np.array(merged['index2'].values, dtype=int)
-        MET = MET[MET_keep_index]
-        MET_cell_ids = MET_cell_ids[MET_keep_index]
-        MET_cell_names = IC50_cell_names[IC50_keep_index]
-        np.savez('%s/GDSC_MET.npz' % data_dir, X=MET, Y=IC50_norm[IC50_keep_index],
-                 cell_ids=MET_cell_ids, cell_names=MET_cell_names,
-                 drug_ids=IC50_drug_ids, drug_names=IC50_drug_names, MET_met=MET_met)
-        logger.info('Methylation (MET) dataset: {} cell lines, {} features, {} drugs'.format(
-            MET.shape[0], MET.shape[1], IC50_norm.shape[1]))
     else:
-        logger.info("MET file not found, skipping: {}".format(MET_file))
+        logger.warning("MET file not found, skipping: {}".format(MET_file))
+        MET = None
 
+    # --- READ IC50 ---
     print("Read LOG_IC50 dataset")
     print("all the IC50 from the xlsx file are log IC50")
     IC50_file = os.path.join(data_dir, 'TableS4A.xlsx')
     wb = load_workbook(filename=IC50_file)
     sheet = wb['TableS4A-IC50s']
-    IC50_cell_ids, IC50_cell_names = [], []
     IC50_cell_ids, IC50_cell_names = [], []
     for i in range(7, 997):
         IC50_cell_ids.append('%s' % sheet['A%s' % i].value)
@@ -158,7 +133,6 @@ def main():
             IC50_drug_names.append(('%s' % cell_row6.value).strip())
     IC50_drug_ids = np.array(IC50_drug_ids, dtype='str')
     IC50_drug_names = np.array(IC50_drug_names, dtype='str')
-
     logger.info("Log IC50 originally have Drugs {}".format(IC50_drug_ids.shape[0]))
 
     IC50 = np.ones([IC50_cell_ids.shape[0], IC50_drug_ids.shape[0]]) * np.nan  # n*m
@@ -186,39 +160,77 @@ def main():
     threshold_drug_ids = np.array(threshold_drug_ids)
     logger.info("threshold drugs have {}".format(threshold_drug_ids.shape[0]))
 
-    # IC50_drug_ids (265) threshold_drug_ids (265)
     # Normalize IC50 by the threshold
     merged = intersect_index(IC50_drug_ids, threshold_drug_ids)
     IC50_keep_index = np.array(merged['index1'].values, dtype=int)
     IC50_drug_ids = IC50_drug_ids[IC50_keep_index]
     IC50 = IC50[:, IC50_keep_index]
     threshold_keep_index = np.array(merged['index2'].values, dtype=int)
-    threshold_drug_ids = threshold_drug_ids[threshold_keep_index]
     threshold = threshold[threshold_keep_index]
 
-    # xy, ind1, ind2 = np.intersect1d(IC50_drug_ids, threshold_drug_ids, return_indices=True)
-    # IC50 = IC50[:, ind1]  # ind1 is IC50 drug ids IC50_drug_ids = IC50_drug_ids[ind1]
-    # this is just -logIC50+log(threshold), max 8.125,min -11.47
+    # this is just -logIC50+log(threshold), max 8.125, min -11.47
     IC50_norm = - (IC50 - threshold)
     IC50_norm_min = np.min(IC50_norm[~np.isnan(IC50_norm)])  # -11.47
     IC50_norm = IC50_norm - IC50_norm_min  # min 0.0, max 19.6
     logger.info(
-        ("after normalize, the max LogIC50 is {:.5f} and min LogIC50 is {:.4f}".format(
-            np.nanmax(IC50_norm),
-            np.nanmin(IC50_norm))))
+        "after normalize, the max LogIC50 is {:.5f} and min LogIC50 is {:.4f}".format(
+            np.nanmax(IC50_norm), np.nanmin(IC50_norm)))
 
-    # Save the GEX features and normalized IC50 dataset
-    merged = intersect_index(GEX_cell_ids, IC50_cell_ids)  # 1018, 990
+    # --- SAVE GEX ---
+    merged = intersect_index(GEX_cell_ids, IC50_cell_ids)
     GEX_keep_index = np.array(merged['index1'].values, dtype=int)
     IC50_keep_index = np.array(merged['index2'].values, dtype=int)
-    GEX = GEX[GEX_keep_index]  # 962
+    GEX = GEX[GEX_keep_index]
     GEX_cell_ids = GEX_cell_ids[GEX_keep_index]
     GEX_cell_names = IC50_cell_names[IC50_keep_index]
-    IC50 = IC50_norm[IC50_keep_index]
-    np.savez('%s/GDSC_GEX.npz' % data_dir, X=GEX, Y=IC50, cell_ids=GEX_cell_ids, cell_names=GEX_cell_names,
-             drug_ids=IC50_drug_ids, drug_names=IC50_drug_names, GEX_gene_symbols=GEX_gene_symbols)
+    IC50_gex = IC50_norm[IC50_keep_index]
+    np.savez('%s/GDSC_GEX.npz' % data_dir, X=GEX, Y=IC50_gex, cell_ids=GEX_cell_ids,
+             cell_names=GEX_cell_names, drug_ids=IC50_drug_ids, drug_names=IC50_drug_names,
+             GEX_gene_symbols=GEX_gene_symbols)
     logger.info('Gene expression (GEX) dataset: {} cell lines, {} features, {} drugs'.format(
-        GEX.shape[0], GEX.shape[1], IC50.shape[1]))
+        GEX.shape[0], GEX.shape[1], IC50_gex.shape[1]))
+
+    # --- SAVE WES (if available) ---
+    if WES is not None:
+        merged = intersect_index(WES_cell_ids, IC50_cell_ids)
+        WES_keep_index = np.array(merged['index1'].values, dtype=int)
+        IC50_keep_index = np.array(merged['index2'].values, dtype=int)
+        WES = WES[WES_keep_index]
+        WES_cell_ids = WES_cell_ids[WES_keep_index]
+        WES_cell_names = IC50_cell_names[IC50_keep_index]
+        np.savez('%s/GDSC_WES.npz' % data_dir, X=WES, Y=IC50_norm[IC50_keep_index],
+                 cell_ids=WES_cell_ids, cell_names=WES_cell_names,
+                 drug_ids=IC50_drug_ids, drug_names=IC50_drug_names, WES_CG=WES_CG)
+        logger.info('Whole-exome sequencing (WES) dataset: {} cell lines, {} features, {} drugs'.format(
+            WES.shape[0], WES.shape[1], IC50_norm.shape[1]))
+
+    # --- SAVE CNV (if available) ---
+    if CNV is not None:
+        merged = intersect_index(CNV_cell_ids, IC50_cell_ids)
+        CNV_keep_index = np.array(merged['index1'].values, dtype=int)
+        IC50_keep_index = np.array(merged['index2'].values, dtype=int)
+        CNV = CNV[CNV_keep_index]
+        CNV_cell_ids = CNV_cell_ids[CNV_keep_index]
+        CNV_cell_names = IC50_cell_names[IC50_keep_index]
+        np.savez('%s/GDSC_CNV.npz' % data_dir, X=CNV, Y=IC50_norm[IC50_keep_index],
+                 cell_ids=CNV_cell_ids, cell_names=CNV_cell_names,
+                 drug_ids=IC50_drug_ids, drug_names=IC50_drug_names, CNV_cna=CNV_cna)
+        logger.info('Copy number variation (CNV) dataset: {} cell lines, {} features, {} drugs'.format(
+            CNV.shape[0], CNV.shape[1], IC50_norm.shape[1]))
+
+    # --- SAVE MET (if available) ---
+    if MET is not None:
+        merged = intersect_index(MET_cell_ids, IC50_cell_ids)
+        MET_keep_index = np.array(merged['index1'].values, dtype=int)
+        IC50_keep_index = np.array(merged['index2'].values, dtype=int)
+        MET = MET[MET_keep_index]
+        MET_cell_ids = MET_cell_ids[MET_keep_index]
+        MET_cell_names = IC50_cell_names[IC50_keep_index]
+        np.savez('%s/GDSC_MET.npz' % data_dir, X=MET, Y=IC50_norm[IC50_keep_index],
+                 cell_ids=MET_cell_ids, cell_names=MET_cell_names,
+                 drug_ids=IC50_drug_ids, drug_names=IC50_drug_names, MET_met=MET_met)
+        logger.info('Methylation (MET) dataset: {} cell lines, {} features, {} drugs'.format(
+            MET.shape[0], MET.shape[1], IC50_norm.shape[1]))
 
     print('Done')
 
@@ -227,7 +239,7 @@ def intersect_index(list1, list2):
     '''
     Given two lists find the index of intersect in list1
 
-    Parameterst
+    Parameters
     ----------
     list1: 1d numpy array
     list2: 1d numpy array
