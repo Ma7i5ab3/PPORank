@@ -2,7 +2,7 @@
 
 **Paper**: PPORank (see `paper.pdf`)  
 **Original repo**: https://github.com/mylzwq/PPORank  
-**Goal**: Reproduce the paper results on the GDSC dataset.
+**Goal**: Full reproducibility challenge — reproduce all experiments reported in the paper across all datasets and analysis scenarios.
 
 ---
 
@@ -110,26 +110,118 @@ Collected proactively (not required by the main config `configG_FULL.yaml`, whic
 
 ---
 
-## Execution pipeline (GDSC FULL)
+## Experiments to reproduce
+
+Methods compared throughout: **EN**, **KRR**, **KRL**, **CaDRRes**, **PPO-w/o** (no eval signal), **PPORank**.  
+Metrics: full-rank NDCG, NDCG@k and Precision@k for k ∈ {1, 5, 10}.
+
+### Experiment 1 — Full dataset prediction (Section 3.1.4, Figure 3)
+- **GDSC** (GEX only, 5-fold CV): compare mean NDCG across all methods.  
+  Paper result: PPORank best (consistent improvement, SD=0.003); CaDRRes second (SD=0.011).
+- **CCLE** (GEX only, 5-fold CV): compare mean NDCG.  
+  Paper result: PPORank marginally better (0.7611 vs 0.7468 EN, 0.7432 CaDRRes).
+
+### Experiment 2 — DNN vs PPORank over training epochs (Section 3.1.4, Figure 4)
+- GDSC only: track NDCG over epochs (up to 600); PPORank approaches DNN trained with approximate NDCG loss.
+
+### Experiment 3 — Multi-omic features (Section 3.1.5, Figure 5)
+- GDSC with three feature combinations: GEX+WES, GEX+CNV, GEX+MET.  
+  Paper result: GEX alone most informative; slight improvement with MET; CNV/WES negligible.  
+  **⚠️ MET unavailable** — GEX+MET experiment cannot be reproduced.
+
+### Experiment 4 — Sequential / online learning (Section 3.2, Figure 6)
+- GDSC: start with 50% of training data, add 20 cell lines at each time step; track NDCG on fixed test set.
+
+### Experiment 5 — Top-k ranking (Section 3.3, Figure 7)
+- GDSC and CCLE: NDCG@k for k ∈ {1, 5, 10}, 3-fold CV (note: different from 5-fold used in Exp 1).
+
+### Experiment 6 — External validation on TCGA BRCA (Section 3.4, Table 1)
+- Train on GDSC; apply to TCGA BRCA cohort (1080 patients, harmonized gene expression).
+- Evaluate lapatinib vs 4 PARP inhibitors (veliparib, olaparib, talazoparib, rucaparib) for HER2+ (n=163) and mBRCA TNBC (n=9 used in table, n=37 in text) patients.  
+  Paper result: lapatinib ranked above all PARPi in 92% of HER2+ patients, only 22% of mBRCA TNBC.
+
+### Experiment 7 — Primary simulations (Section 3.5.1, Table 2)
+- 3 scenarios: linear (Y=0.2·XW+ε), cubic (Y=0.15·X³W+0.15·XW+ε), exponential (Y=0.1·exp(X)W+0.1·X³W+ε).
+- N=1000 cell lines, 100 drugs, 2000 features; repeated at n=10000.
+- Original cell line features X used directly (not Pearson kernel).
+
+### Experiment 8 — Secondary simulations (Section 3.5.2, Table 3)
+- Mixed scenario (40 drugs: first 20 linear, next 10 cubic, last 10 exponential), n=1000 and n=10000.
+
+---
+
+## Data status
+
+| Dataset / Modality | Status | Notes |
+|--------------------|--------|-------|
+| GDSC GEX | ✅ `GDSC_GEX.npz` generated | 962 cell lines, 17737 genes, 265 drugs |
+| GDSC WES | ✅ `GDSC_WES.npz` generated | 953 cell lines, 300 genes |
+| GDSC CNV | ✅ `GDSC_CNV.npz` generated | 985 cell lines, 425 segments |
+| GDSC MET | ❌ permanently lost | File not found on cancerrxgene.org, Wayback Machine, DepMap, Zenodo |
+| CCLE | ✅ kernel + IC50 present | `CCLE_cellline_pcor_ess_genes.csv` (1037×1037), `CCLE_all_abs_ic50_bayesian_sigmoid.csv` (504×24), `CCLE_drugMedianGE0.txt` |
+| SimuData | ❓ not generated yet | `preprocess/prepare_simu.py` generates it; needs to be run |
+| TCGA BRCA | ❌ not present | `results_TCGA.py` needs `data/GDSC_ALL/TCGA_BRCA.npz`; download source: Broad Institute Firehose 2016-01-28 |
+
+**Note on drug count discrepancy**: the paper reports 223 GDSC drugs (after removing toxic drugs) and 19 CCLE drugs, but the config uses `k_max: [265, 26]` and the .npz files contain 265 GDSC drugs. Toxic drug filtering appears to happen inside the pipeline (possibly in `preprocess/toxic_data.py`) and must be verified.
+
+---
+
+## Execution pipeline
+
+### GDSC (Experiments 1, 2, 3, 4, 5)
 
 ```bash
-# 1. Activate environment
 conda activate pporank
 
-# 2. Generate .npz files from raw data
+# Step 1 — generate .npz from raw data (already done)
 python preprocess/load_dataset.py
 
-# 3. Generate cross-validation fold splits
+# Step 2 — generate CV fold splits
 python prepare.py --config configs/configG_FULL.yaml
 
-# 4. Training
+# Step 3 — training
 python main.py --config configs/configG_FULL.yaml
+```
+
+### CCLE (Experiments 1, 5)
+
+```bash
+# Step 1 — preprocess CCLE features
+python preprocess/preprocess_fts_cl_drug.py --Data data/CCLE
+
+# Step 2 — generate CV fold splits (config to be created)
+python prepare.py --config configs/configC.yaml
+
+# Step 3 — training
+python main.py --config configs/configC.yaml
+```
+
+### Simulations (Experiments 7, 8)
+
+```bash
+python preprocess/prepare_simu.py   # generate synthetic data
+python prepare.py --config configs/configSimu.yaml   # config to be created
+python main.py --config configs/configSimu.yaml
+```
+
+### TCGA validation (Experiment 6)
+
+```bash
+# Requires TCGA_BRCA.npz (to be downloaded from Broad Firehose)
+python results_TCGA.py
 ```
 
 ---
 
 ## Open issues / to verify
 
-- The MET file (`METH_CELLLINES_BEMs/PANCAN.txt`) is unavailable: the pipeline runs without it (GEX, WES, CNV only). The main config `configG_FULL.yaml` uses `Data_All: True` and `data: GDSC_ALL`, which in practice loads only GEX — so the missing MET does not impact reproduction.
-- The config includes CaDRRes as a baseline method (`methods: ['KRR','KRL','CaDRRes','EN']`): verify that `preprocess/preprocess_fts_cl_drug.py` runs correctly before training.
-- `prepare.py` has not been run yet: this is the next required step before training.
+| Issue | Priority | Notes |
+|-------|----------|-------|
+| **MET modality** | Low | Cannot reproduce GEX+MET experiment (Figure 5 incomplete) |
+| **TCGA BRCA data** | High | `TCGA_BRCA.npz` not present; must download from Broad Institute Firehose 2016-01-28 and harmonize with GDSC gene expression (pipeline from Geeleher et al 2017) |
+| **Toxic drug filtering** | High | Paper uses 223 GDSC drugs / 19 CCLE drugs; `.npz` files have 265 / 24; verify that `preprocess/toxic_data.py` is called correctly and produces the right filtered dataset |
+| **GDSC vs GDSC_ALL** | Medium | `config.yaml` uses `data: GDSC`; `configG_FULL.yaml` uses `data: GDSC_ALL`; check if they refer to the same preprocessed data or to two different subsets |
+| **CCLE config** | Medium | No `configC.yaml` exists; need to create it with correct dataset path, methods, and hyperparameters |
+| **SimuData config** | Medium | No config for simulation experiments; need to create it |
+| **CaDRRes preprocessing** | High | `preprocess_fts_cl_drug.py` must be run before training to generate CaDRRes input features; not yet verified |
+| **`prepare.py` not yet run** | High | Must run before any training |
