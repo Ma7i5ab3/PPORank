@@ -160,7 +160,7 @@ Metrics: full-rank NDCG, NDCG@k and Precision@k for k ∈ {1, 5, 10}.
 | GDSC MET | ❌ permanently lost | File not found on cancerrxgene.org, Wayback Machine, DepMap, Zenodo |
 | CCLE | ✅ kernel + IC50 present | `CCLE_cellline_pcor_ess_genes.csv` (1037×1037), `CCLE_all_abs_ic50_bayesian_sigmoid.csv` (504×24), `CCLE_drugMedianGE0.txt` |
 | SimuData | ❓ not generated yet | `preprocess/prepare_simu.py` generates it; needs to be run |
-| TCGA BRCA | ❌ not present | `results_TCGA.py` needs `data/GDSC_ALL/TCGA_BRCA.npz`; download source: Broad Institute Firehose 2016-01-28 |
+| TCGA BRCA | ⚠️ partial | `misc.py` now present (downloaded from KRL, adapted for Python 3); `TCGA_BRCA.npz` and `TCGA_BRCA_clinical.csv.gz` still missing — require R pipeline (see TCGA section below) |
 
 **Note on drug count discrepancy**: the paper reports 223 GDSC drugs (after removing toxic drugs) and 19 CCLE drugs, but the config uses `k_max: [265, 26]` and the .npz files contain 265 GDSC drugs. Toxic drug filtering appears to happen inside the pipeline (possibly in `preprocess/toxic_data.py`) and must be verified.
 
@@ -207,9 +207,56 @@ python main.py --config configs/configSimu.yaml
 ### TCGA validation (Experiment 6)
 
 ```bash
-# Requires TCGA_BRCA.npz (to be downloaded from Broad Firehose)
+# Requires TCGA_BRCA.npz and TCGA_BRCA_clinical.csv.gz — see TCGA data pipeline below
 python results_TCGA.py
 ```
+
+---
+
+## TCGA data pipeline (Experiment 6)
+
+`results_TCGA.py` needs two files in `data/GDSC_ALL/`:
+
+| File | Content |
+|------|---------|
+| `TCGA_BRCA.npz` | `test_X` (harmonized TCGA gene expression, 1080 patients) and `test_ids` (TCGA patient IDs) |
+| `TCGA_BRCA_clinical.csv.gz` | Clinical annotations indexed by patient ID: columns ER, PR, HER2, CHR17, BRCA_germline, JAK2_RPPA |
+
+Also requires `misc.py` in the project root — **downloaded from KRL repo and adapted for Python 3** (was using Python 2 `print >>` syntax).
+
+### Step 1 — Generate harmonized TCGA gene expression (R)
+
+The paper uses the pRRophetic Bioconductor package (Geeleher et al 2017, Genome Research) to harmonize TCGA RNA-seq (Level 3, Illumina HiSeq v2) with GDSC microarray gene expression.
+
+```r
+# Install pRRophetic in R
+if (!require("BiocManager")) install.packages("BiocManager")
+BiocManager::install("pRRophetic")
+
+# Download TCGA BRCA RNA-seq Level 3 from Broad Institute Firehose:
+# https://gdac.broadinstitute.org/ → BRCA → Stddata 2016-01-28 → mRNAseq_Preprocess
+
+# Run harmonization (produces pRRophetic_TCGA_BRCA_trainFrame.csv.gz,
+#                             pRRophetic_TCGA_BRCA_testFrame.csv.gz,
+#                             pRRophetic_TCGA_BRCA_preds.csv.gz)
+# See: Geeleher et al. Genome Res. 2017;27(10):1743-1751
+```
+
+### Step 2 — Create TCGA_BRCA.npz (Python, adapted from KRL)
+
+The KRL repo provides `create_TCGA_data.py` which reads the pRRophetic output and `GDSC_GEX.npz`, then saves `KRL_data_for_TCGA_BRCA.npz` with keys `train_X`, `train_Y`, `test_X`, `test_ids`. The PPORank `results_TCGA.py` reads `TCGA_BRCA.npz` with the same keys, so the KRL output can be used directly after renaming/copying.
+
+Note: `create_TCGA_data.py` from KRL also uses Python 2 syntax and would need adaptation.
+
+### Step 3 — Assemble TCGA_BRCA_clinical.csv.gz
+
+Required columns and sources:
+| Column | Source |
+|--------|--------|
+| `HER2`, `ER`, `PR` | TCGA BRCA clinical annotations (GDC or cBioPortal) |
+| `CHR17` | Chromosome 17 copy number from TCGA CNV data |
+| `BRCA_germline` | Maxwell et al. Nat Commun 2017 — germline BRCA1/2 loss-of-function mutations |
+| `JAK2_RPPA` | TCGA RPPA (reverse-phase protein array) data |
 
 ---
 
