@@ -50,4 +50,18 @@ PPO experiment with TCGA cohort
 ```
 
 
+### What should be done
+
+# Step 1 — process raw GDSC files → produces data/GDSC_ALL/GDSC_GEX.npz
+#           WES/CNV/MET are skipped automatically (files not present)
+python preprocess/load_dataset.py preprocess/load_GDSC.txt
+
+# Step 2 — 5-fold CV split + Pearson kernel features + MF layer pretraining
+#           gene filter skipped automatically (gdsc_697_genes.csv not present)
+python prepare.py --decompose
+
+# Step 3 — train PPORank (repeat for Fold1..Fold4 for full 5-fold CV)
+python main.py --num_processes 16 --Data data/GDSC_ALL \
+               --analysis FULL --algo ppo --f 100 \
+               --normalize_y --fold Fold0
 

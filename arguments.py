@@ -361,11 +361,22 @@ def get_args():
         default=0.0,
         help='noise mean if using noise data')
 
+    parser.add_argument(
+        '--shared_params',
+        default=False,
+        action='store_true',
+        help='whether to share params between actor and critic')
+    parser.add_argument(
+        '--no_cuda',
+        default=False,
+        action='store_true',
+        help='disable CUDA even if available')
+
     args = parser.parse_args()
 
-    args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    #args.cuda = not args.no_cuda and torch.cuda.is_available()
+    args.cuda = torch.cuda.is_available() and not args.no_cuda
+    args.device = torch.device("cuda:{}".format(args.cuda_id) if args.cuda and args.cuda_id < torch.cuda.device_count() else
+                               "cuda" if args.cuda else "cpu")
 
     assert args.algo in ['pg', 'ppo', 'dnn']
 

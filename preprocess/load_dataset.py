@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
 sys.path.append(parentdir)
@@ -20,11 +21,13 @@ from set_log import set_logging
 
 
 def main():
+    pipeline_start = time.time()
     NAME = "GDSC_dataloader"
     logger = set_logging(NAME)
+    logger.info("=== GDSC preprocessing pipeline started ===")
 
     data_dir = os.getcwd()+"/data/GDSC_ALL"
-    print(data_dir)
+    logger.info("Data directory: {}".format(data_dir))
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
 
@@ -40,20 +43,27 @@ def main():
                 if line.startswith("http://") or line.startswith("https://"):
                     urls.append(line.strip())
 
-        logger.info("Downloading raw data from URLs...")
+        logger.info("Downloading {} raw data file(s)...".format(len(urls)))
         for url in urls:
             local_file = os.path.join(data_dir, os.path.basename(url))
             if os.path.exists(local_file):
+                logger.info("  already cached: {}".format(os.path.basename(url)))
                 continue
+            t0 = time.time()
+            logger.info("  downloading: {}".format(os.path.basename(url)))
             urllib.request.urlretrieve(url, local_file)
+            logger.info("  downloaded in {:.1f}s".format(time.time() - t0))
             if local_file.endswith('.zip'):
+                logger.info("  extracting {}...".format(os.path.basename(url)))
                 with zipfile.ZipFile(local_file, mode='r') as r:
                     r.extractall(data_dir)
+                logger.info("  extraction complete")
 
-    print("processing the GDSC data set")
+    logger.info("Processing the GDSC data set...")
 
     # --- READ GEX ---
-    print("gene expression data")
+    t0 = time.time()
+    logger.info("[Step 1/5] Reading gene expression data (GEX)...")
     GEX_file = os.path.join(data_dir, 'Cell_line_RMA_proc_basalExp.txt')
     GEX = pd.read_csv(GEX_file, sep='\t')
     GEX_gene_symbols = np.array(GEX['GENE_SYMBOLS'], dtype='str')
@@ -62,22 +72,25 @@ def main():
     for i, cell_id in enumerate(GEX_cell_ids):
         GEX_cell_ids[i] = cell_id[5:]
     GEX = np.array(GEX.values, dtype=float).T  # (1018,17737)
-    logger.info("the GEX data has dims {}, {}".format(GEX.shape[0], GEX.shape[1]))
+    logger.info("  GEX dims: {} cell lines x {} genes  [{:.1f}s]".format(
+        GEX.shape[0], GEX.shape[1], time.time() - t0))
 
     # --- READ WES (optional) ---
     WES_cell_ids = None
     WES_CG = None
     WES_file = os.path.join(data_dir, 'CellLines_CG_BEMs/PANCAN_SEQ_BEM.txt')
     if os.path.exists(WES_file):
-        print('read whole exome sequencing data')
+        t0 = time.time()
+        logger.info("[Step 2/5] Reading WES data...")
         WES = pd.read_csv(WES_file, sep='\t')
         WES_CG = np.array(WES['CG'], dtype='str')
         WES = WES.drop(['CG'], axis=1)
         WES_cell_ids = np.array(WES.columns, dtype='str')
         WES = np.array(WES.values, dtype=int).T  # (961,300)
-        logger.info("the WES data has dims {}, {}".format(WES.shape[0], WES.shape[1]))
+        logger.info("  WES dims: {} cell lines x {} features  [{:.1f}s]".format(
+            WES.shape[0], WES.shape[1], time.time() - t0))
     else:
-        logger.warning("WES file not found, skipping: {}".format(WES_file))
+        logger.warning("[Step 2/5] WES file not found, skipping: {}".format(WES_file))
         WES = None
 
     # --- READ CNV (optional) ---
@@ -85,15 +98,17 @@ def main():
     CNV_cna = None
     CNV_file = os.path.join(data_dir, 'CellLine_CNV_BEMs/PANCAN_CNA_BEM.rdata.txt')
     if os.path.exists(CNV_file):
-        print("Read Copy number dataset")
+        t0 = time.time()
+        logger.info("[Step 3/5] Reading CNV data...")
         CNV = pd.read_csv(CNV_file, sep='\t')
         CNV_cell_ids = np.array(CNV['Unnamed: 0'], dtype='str')
         CNV = CNV.drop(['Unnamed: 0'], axis=1)
         CNV_cna = np.array(CNV.columns, dtype='str')
         CNV = np.array(CNV.values, dtype=int)  # (996,425)
-        logger.info("the CNV data has dims {}, {}".format(CNV.shape[0], CNV.shape[1]))
+        logger.info("  CNV dims: {} cell lines x {} features  [{:.1f}s]".format(
+            CNV.shape[0], CNV.shape[1], time.time() - t0))
     else:
-        logger.warning("CNV file not found, skipping: {}".format(CNV_file))
+        logger.warning("[Step 3/5] CNV file not found, skipping: {}".format(CNV_file))
         CNV = None
 
     # --- READ MET (optional) ---
@@ -101,20 +116,22 @@ def main():
     MET_met = None
     MET_file = os.path.join(data_dir, 'METH_CELLLINES_BEMs/PANCAN.txt')
     if os.path.exists(MET_file):
-        print("Read Methylation dataset")
+        t0 = time.time()
+        logger.info("[Step 4/5] Reading methylation (MET) data...")
         MET = pd.read_csv(MET_file, sep='\t')
         MET_met = np.array(MET['Unnamed: 0'], dtype='str')
         MET = MET.drop(['Unnamed: 0'], axis=1)
         MET_cell_ids = np.array(MET.columns, dtype='str')
         MET = np.array(MET.values, dtype=int).T  # (790,378)
-        logger.info("the MET data has dims {}, {}".format(MET.shape[0], MET.shape[1]))
+        logger.info("  MET dims: {} cell lines x {} features  [{:.1f}s]".format(
+            MET.shape[0], MET.shape[1], time.time() - t0))
     else:
-        logger.warning("MET file not found, skipping: {}".format(MET_file))
+        logger.warning("[Step 4/5] MET file not found, skipping: {}".format(MET_file))
         MET = None
 
     # --- READ IC50 ---
-    print("Read LOG_IC50 dataset")
-    print("all the IC50 from the xlsx file are log IC50")
+    t0 = time.time()
+    logger.info("[Step 5/5] Reading IC50 data (TableS4A.xlsx)...")
     IC50_file = os.path.join(data_dir, 'TableS4A.xlsx')
     wb = load_workbook(filename=IC50_file)
     sheet = wb['TableS4A-IC50s']
@@ -173,10 +190,12 @@ def main():
     IC50_norm_min = np.min(IC50_norm[~np.isnan(IC50_norm)])  # -11.47
     IC50_norm = IC50_norm - IC50_norm_min  # min 0.0, max 19.6
     logger.info(
-        "after normalize, the max LogIC50 is {:.5f} and min LogIC50 is {:.4f}".format(
-            np.nanmax(IC50_norm), np.nanmin(IC50_norm)))
+        "  IC50 normalized: max={:.5f}, min={:.4f}  [{:.1f}s]".format(
+            np.nanmax(IC50_norm), np.nanmin(IC50_norm), time.time() - t0))
 
     # --- SAVE GEX ---
+    t_save = time.time()
+    logger.info("Saving processed datasets...")
     merged = intersect_index(GEX_cell_ids, IC50_cell_ids)
     GEX_keep_index = np.array(merged['index1'].values, dtype=int)
     IC50_keep_index = np.array(merged['index2'].values, dtype=int)
@@ -187,7 +206,7 @@ def main():
     np.savez('%s/GDSC_GEX.npz' % data_dir, X=GEX, Y=IC50_gex, cell_ids=GEX_cell_ids,
              cell_names=GEX_cell_names, drug_ids=IC50_drug_ids, drug_names=IC50_drug_names,
              GEX_gene_symbols=GEX_gene_symbols)
-    logger.info('Gene expression (GEX) dataset: {} cell lines, {} features, {} drugs'.format(
+    logger.info('  Saved GDSC_GEX.npz: {} cell lines x {} genes, {} drugs'.format(
         GEX.shape[0], GEX.shape[1], IC50_gex.shape[1]))
 
     # --- SAVE WES (if available) ---
@@ -232,6 +251,9 @@ def main():
         logger.info('Methylation (MET) dataset: {} cell lines, {} features, {} drugs'.format(
             MET.shape[0], MET.shape[1], IC50_norm.shape[1]))
 
+    logger.info("All datasets saved in {:.1f}s".format(time.time() - t_save))
+    logger.info("=== GDSC preprocessing complete — total elapsed: {:.1f}s ===".format(
+        time.time() - pipeline_start))
     print('Done')
 
 

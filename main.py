@@ -32,6 +32,7 @@ from models.DNN_models import DeepCrossModel, LinearModel
 
 
 def main(Debug=False):
+    train_start = time.time()
     args = get_args()
 
     torch.manual_seed(args.seed)
@@ -39,11 +40,10 @@ def main(Debug=False):
 
     if args.distributed:
         torch.cuda.set_device(args.local_rank)
-        torch.distributed.init_process_group(
-            'nccl')
+        torch.distributed.init_process_group('nccl')
         device = torch.device(f'cuda:{args.local_rank}')
     else:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = args.device
 
     if args.cuda and torch.cuda.is_available() and args.cuda_deterministic:
         torch.backends.cudnn.benchmark = False
@@ -51,13 +51,18 @@ def main(Debug=False):
 
     np.random.seed(args.seed)
 
-    # if torch.cuda.is_available() and torch.cuda.current_device()==0:
-    #    torch.cuda.set_device(5)
-
-    # print(device)
     NAME = initialize_logger_name(args)
     logger = set_logging(NAME)
-    #logger.info("current cuda device is {}".format(torch.cuda.current_device()))
+
+    # Log device info
+    if args.cuda and torch.cuda.is_available():
+        gpu_idx = device.index if device.index is not None else torch.cuda.current_device()
+        logger.info("Device: {} | GPU: {} | CUDA {}" .format(
+            device, torch.cuda.get_device_name(gpu_idx), torch.version.cuda))
+        logger.info("GPU memory: {:.1f} GB total".format(
+            torch.cuda.get_device_properties(gpu_idx).total_memory / 1e9))
+    else:
+        logger.info("Device: CPU (no GPU available or --no_cuda set)")
 
     utils.create_save_dir(args.saved_dir)
     data_dir = os.path.join(os.getcwd(), args.Data)
@@ -173,9 +178,11 @@ def main(Debug=False):
             agent.value_net.load_state_dict(checkpoint['value_state_dict'])
             agent.optimizer.load_state_dict(checkpoint['optimizer'])
 
+        logger.info("=== Training started: {} epochs, {} processes, device={} ===".format(
+            epochs, args.num_processes, device))
+
         for epoch in range(epochs):
-            # train_loader = DataLoader(train_dataset, sampler=tr_sampler, num_workers=4, pin_memory=True,
-            #                           batch_size=args.num_processes, drop_last=True)
+            epoch_start = time.time()
             if args.use_linear_lr_decay:
                 utils.update_linear_schedule(agent.optimizer, epoch, num_updates, args.lr)
             ppo_epoch_loss = []
@@ -245,9 +252,18 @@ def main(Debug=False):
                 agent, test_loader, args, device)
             writer.add_scalar('ndcg_test', ndcg_test, epoch)
 
+            epoch_elapsed = time.time() - epoch_start
+            eta = epoch_elapsed * (epochs - epoch - 1)
             fp.write(f"{epoch} {ndcg_train:.4f} {train_rewards:.6f},{ndcg_test:.4f},{test_rewards:.6f}\n")
-            logger.info("DEV_and_Test@{}:train_ndcg {:.4f},test_ndcg {:.4f},train_rewards {:.6f},test_rewards {:.6f},ppo_epoch_loss {:6f}".format(
-                epoch, ndcg_train, ndcg_test, train_rewards, test_rewards, epoch_loss))
+            logger.info(
+                "Epoch {}/{} | train_ndcg={:.4f} test_ndcg={:.4f} | "
+                "train_rew={:.6f} test_rew={:.6f} | loss={:.6f} | "
+                "elapsed={:.1f}s ETA={:.0f}s".format(
+                    epoch, epochs - 1,
+                    ndcg_train, ndcg_test,
+                    train_rewards, test_rewards,
+                    epoch_loss,
+                    epoch_elapsed, eta))
 
             # save for every interval-th episode
 
@@ -295,6 +311,8 @@ def main(Debug=False):
 
         fp.close()
         writer.close()
+        logger.info("=== Training complete — best_ndcg={:.4f} | total elapsed: {:.1f}s ===".format(
+            best_ndcg, time.time() - train_start))
 
     return best_ndcg
 

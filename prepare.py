@@ -1,6 +1,7 @@
 from __future__ import print_function
 import os
 import sys
+import time
 import yaml
 import numpy as np
 import pandas as pd
@@ -103,8 +104,10 @@ def keepk_sample(Y_train, Y_test, keepk_ratio, keepk):
 
 
 def Split_Data():
+    pipeline_start = time.time()
     NAME = "data_spilt_CV"
     logger = set_logging(NAME)
+    logger.info("=== Data preparation pipeline started ===")
     logger.info('Splitting the data for training and testing, creating folds for cross-validation...')
     args = parse_args()
     config_file = args.config
@@ -219,14 +222,15 @@ def Split_Data():
         np.random.seed(seed)
         kf = KFold(n_splits=args.nfolds, shuffle=True, random_state=args.seed)
         for i, (train_index, test_index) in enumerate(kf.split(X)):
-            print("spit fold {}".format(i))
+            fold_start = time.time()
+            logger.info("Creating Fold {}/{} (train={}, test={})...".format(
+                i, args.nfolds - 1, len(train_index), len(test_index)))
             X_train_full = X.iloc[train_index]  # (788,985)
             X_test = X.iloc[test_index]  # (197,985)
             Y_train_full = Y.iloc[train_index]  # (788,223)
             Y_test = Y.iloc[test_index]  # (197,223)
             X_train_kernel = kernel_feature_df.iloc[train_index, train_index]
             X_test_kernel = kernel_feature_df.iloc[test_index, train_index]
-            # '/home/liux3941/RL/RL_GDSC/GDSC_ALL/CV/FULL/Fold0'
             fold_dir = os.path.join(os.getcwd(), args.data_dir, CV_dir, analysis, "Fold{}".format(i))
             if not os.path.exists(fold_dir):
                 os.makedirs(fold_dir)
@@ -236,6 +240,7 @@ def Split_Data():
             Y_test.to_csv(os.path.join(fold_dir, 'YtestDf.csv'))
             X_train_kernel.to_csv(os.path.join(fold_dir, "Xtrain_kernel.csv"))
             X_test_kernel.to_csv(os.path.join(fold_dir, "Xtest_kernel.csv"))
+            logger.info("  Fold {} saved to {}  [{:.1f}s]".format(i, fold_dir, time.time() - fold_start))
 
             # np.savez_compressed(fold_dir+"/FulltrainDf.npz".format(i), Xtrain=X_train_full, Ytrain=Y_train_full)
             # np.savez_compressed(fold_dir+"/FulltestDf.npz".format(i), Xtest=X_test, Ytest=Y_test)
@@ -287,8 +292,13 @@ def Split_Data():
                         np.savez_compressed(fold_dir+"/trainDf_fold{}.npz".format(j), Xtrain=X_train, Ytrain=Y_train)
                         np.savez_compressed(fold_dir+"/valDf_fold{}.npz".format(j), Xval=X_val, Yval=Y_val)
 
+    logger.info("=== CV split complete — total elapsed: {:.1f}s ===".format(time.time() - pipeline_start))
+
     if args.decompose:
+        logger.info("Running MF layer pretraining (--decompose)...")
+        t_decompose = time.time()
         Pretrained_MF_split()
+        logger.info("MF pretraining complete in {:.1f}s".format(time.time() - t_decompose))
 
 
 def Load_from_decompose():
@@ -395,11 +405,11 @@ def Pretrained_MF_split(iters=20000):
     lr = args.lr
     if analysis == "FULL":
         out_dir = os.path.join(os.getcwd(), args.data_dir, args.CV_dir, analysis)
+        mf_start = time.time()
         for i in range(nfolds):
+            fold_start = time.time()
             out_dir_cv = os.path.join(out_dir, "Fold{}".format(i))
-            # train_data = np.load(out_dir_cv+"/FulltrainDf.npz")
-            # Xtrain = train_data['Xtrain']
-            # Ytrain = train_data['Ytrain']
+            print("MF pretraining Fold {}/{} ...".format(i, nfolds - 1))
             Xtrain_df = pd.read_csv(out_dir_cv+'/Xtrain_rawDf.csv', index_col=0)
             Ytrain_df = pd.read_csv(out_dir_cv+'/YtrainDf.csv', index_col=0)
             Ytest_df = pd.read_csv(out_dir_cv+'/YtestDf.csv', index_col=0)
@@ -407,19 +417,18 @@ def Pretrained_MF_split(iters=20000):
             Xtrain_kernel = pd.read_csv(out_dir_cv+'/Xtrain_kernel.csv', index_col=0)
             Xtest_kernel = pd.read_csv(out_dir_cv+'/Xtest_kernel.csv', index_col=0)
 
-            # Xtrain_corrdf, Xtest_corrdf = prep_genexp.pre_kernal_genes(Xtrain_df, Xtest_df, Ytrain_df, Ytest_df, os.path.join(
-            #     os.getcwd(),
-            #     args.data_dir, gene_list_fn,out_dir_cv)
-            ###
             xscaler = StandardScaler()
             Xtrain_df = pd.DataFrame(xscaler.fit_transform(Xtrain_df), columns=Xtrain_df.columns, index=Xtrain_df.index)
             Xtest_df = pd.DataFrame(xscaler.transform(Xtest_df), columns=Xtest_df.columns, index=Xtest_df.index)
             Ypred_mat = Response_decompose(Ytrain_df, Xtrain_df, Ytest_df, Xtest_df, iters,
                                            lr, f, out_dir_cv, i, training=True)
             if Ypred_mat is not None:
-                print('storing the Ypred mat from CaDRRes')
+                print('Fold {}: storing Ypred mat from CaDRRes  [{:.1f}s]'.format(i, time.time() - fold_start))
                 result_fn = get_result_filename('CaDRRes', analysis, data_name, i, args.f)
                 np.savez(result_fn, Y_true=np.array(Ytest_df), Y_pred=Ypred_mat)
+            else:
+                print('Fold {}: MF pretraining complete  [{:.1f}s]'.format(i, time.time() - fold_start))
+        print("All {} folds pretrained in {:.1f}s".format(nfolds, time.time() - mf_start))
 
     elif analysis == "KEEPK":
         for kr in keepk_ratios:
