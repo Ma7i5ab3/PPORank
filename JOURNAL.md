@@ -66,6 +66,28 @@ Path corrections and minor bug fixes:
 ### Commit `5f4506f` — update code
 - `main.py`: re-enabled `SummaryWriter`; added automatic creation of `./results/{Data}/` directory before opening results file
 
+### Commit `a738f83` — add misc.py
+- `misc.py` added to project root: downloaded from KRL repo and adapted for Python 3 (was using Python 2 `print >>` syntax). Required by `results_TCGA.py`.
+
+### Commit `bb55463` — fix: added logs and .sh pipeline (Ma7i5ab3, 2026-05-29)
+
+| File | Change |
+|------|--------|
+| `run_pipeline.sh` | New file (119 lines): full bash pipeline script for GDSC — runs preprocessing → CV split → training with configurable `NUM_PROCESSES`, `F`, `ALGO`, `NFOLDS`, `CUDA_ID`; skips steps already done |
+| `arguments.py` | Added `--shared_params` flag; added `--no_cuda` flag; improved device selection: `args.device = cuda:{cuda_id}` if available, else CPU |
+| `main.py` | Added per-epoch timing and ETA in log; device info logged at startup (GPU name, CUDA version, memory); summary log at end with `best_ndcg` and total elapsed |
+| `prepare.py` | Replaced bare `print` with structured `logger` calls; added per-fold timing; added pipeline start/end timing; added MF pretraining timing |
+| `preprocess/load_dataset.py` | Replaced all `print` with `logger`; added step labels `[Step 1/5]`…`[Step 5/5]`; added per-step timing |
+
+### Commit `55b0b27` — minor fixes (Ma7i5ab3, 2026-06-05)
+
+| File | Change |
+|------|--------|
+| `.gitignore` | Added `Saved/*`, `results/*`, `runs/*` |
+| `models/Policy.py` | `get_log_prob(scores, filter_masks, actions)` → `get_log_prob(scores, filter_masks, actions.squeeze(-1))` — fix tensor dimension mismatch |
+| `set_log.py` | `args.Data` → `args.Data.replace('/', '_')` in log name construction — prevents `data/GDSC_ALL` from creating a subdirectory in the log name |
+| `utils.py` | Same `.replace('/', '_')` fix in `create_model_name` for both PPO and non-PPO branches |
+
 ---
 
 ## Added `requirements.txt`
@@ -160,7 +182,7 @@ Metrics: full-rank NDCG, NDCG@k and Precision@k for k ∈ {1, 5, 10}.
 | GDSC MET | ❌ permanently lost | File not found on cancerrxgene.org, Wayback Machine, DepMap, Zenodo |
 | CCLE | ✅ kernel + IC50 present | `CCLE_cellline_pcor_ess_genes.csv` (1037×1037), `CCLE_all_abs_ic50_bayesian_sigmoid.csv` (504×24), `CCLE_drugMedianGE0.txt` |
 | SimuData | ❓ not generated yet | `preprocess/prepare_simu.py` generates it; needs to be run |
-| TCGA BRCA | ⚠️ partial | `misc.py` now present (downloaded from KRL, adapted for Python 3); `TCGA_BRCA.npz` and `TCGA_BRCA_clinical.csv.gz` still missing — require R pipeline (see TCGA section below) |
+| TCGA BRCA | ⚠️ partial | `misc.py` present (commit `a738f83`); `TCGA_BRCA.npz` and `TCGA_BRCA_clinical.csv.gz` still missing — require R pipeline (see TCGA section below) |
 
 **Note on drug count discrepancy**: the paper reports 223 GDSC drugs (after removing toxic drugs) and 19 CCLE drugs, but the config uses `k_max: [265, 26]` and the .npz files contain 265 GDSC drugs. Toxic drug filtering appears to happen inside the pipeline (possibly in `preprocess/toxic_data.py`) and must be verified.
 
@@ -271,4 +293,4 @@ Required columns and sources:
 | **CCLE config** | Medium | No `configC.yaml` exists; need to create it with correct dataset path, methods, and hyperparameters |
 | **SimuData config** | Medium | No config for simulation experiments; need to create it |
 | **CaDRRes preprocessing** | High | `preprocess_fts_cl_drug.py` must be run before training to generate CaDRRes input features; not yet verified |
-| **`prepare.py` not yet run** | High | Must run before any training |
+| **`prepare.py` not yet run** | High | Must run before any training; no fold splits found in `data/GDSC_ALL/CV/` as of 2026-06-05 |
