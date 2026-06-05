@@ -221,7 +221,7 @@ def create_model_name(args, ppo=False):
 
     if not ppo:
         model_name = "_".join(("{}".format(args.algo),
-                               "{}".format(args.Data),
+                               "{}".format(args.Data.replace('/', '_')),
                                "{}".format(args.analysis),
                                "f{}".format(args.f),
                                "{}".format(keepk),
@@ -234,7 +234,7 @@ def create_model_name(args, ppo=False):
                                ))
     else:
         model_name = "_".join(("{}".format(args.algo),
-                               "{}".format(args.Data),
+                               "{}".format(args.Data.replace('/', '_')),
                                "{}".format(args.analysis),
                                "{}Dim".format(args.f),
                                "{}".format(keepk),

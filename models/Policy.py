@@ -288,7 +288,7 @@ class PPO_Policy(nn.Module):
         #values = self.get_value(obs_critic, filter_masks)
         values = self.critic(critic_input)
 
-        action_log_prob, dist_entropy = self.get_log_prob(scores, filter_masks, actions)
+        action_log_prob, dist_entropy = self.get_log_prob(scores, filter_masks, actions.squeeze(-1))
 
         return values, action_log_prob, dist_entropy
 

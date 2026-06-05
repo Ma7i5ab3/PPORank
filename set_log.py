@@ -45,7 +45,7 @@ def initialize_logger_name(args):
         #                  "ratio{}".format(kr)
         #                  ))
         NAME = "_".join(("{}".format(args.algo),
-                         "{}".format(args.Data),
+                         "{}".format(args.Data.replace('/', '_')),
                          "{}".format(args.analysis),
                          "f{}".format(args.f),
                          "{}".format(keepk),
@@ -57,7 +57,7 @@ def initialize_logger_name(args):
                          ))
     elif args.algo in ['dnn', 'pg']:
         NAME = "_".join(("{}".format(args.algo),
-                         "{}".format(args.Data),
+                         "{}".format(args.Data.replace('/', '_')),
                          "{}".format(args.analysis),
                          "{}Dim".format(args.f),
                          "{}".format(keepk),
