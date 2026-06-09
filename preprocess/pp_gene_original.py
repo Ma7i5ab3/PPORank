@@ -56,16 +56,15 @@ def calculate_kernel_feature(log2_median_fc_exp_df, ref_log2_median_fc_exp_df, g
     exp_mat = np.array(log2_median_fc_exp_df.loc[common_genes], dtype='float')
     ref_exp_mat = np.array(ref_log2_median_fc_exp_df.loc[common_genes], dtype='float')
 
-    sim_mat = np.zeros((len(sample_list), len(ref_sample_list)))
+    # Vectorized Pearson correlation: z-score each column, then dot product / n_genes
+    def _zscore(m):
+        mu = m.mean(axis=0, keepdims=True)
+        sd = m.std(axis=0, keepdims=True)
+        sd[sd == 0] = 1
+        return (m - mu) / sd
 
-    start = time.time()
-    for i in range(len(sample_list)):
-        if (i+1) % 100 == 0:
-            print("{} of {} ({:.2f})s".format(i+1, len(sample_list), time.time()-start))
-            start = time.time()
-        for j in range(len(ref_sample_list)):
-            p_cor, _ = stats.pearsonr(exp_mat[:, i], ref_exp_mat[:, j])
-            sim_mat[i, j] = p_cor
+    n_genes = exp_mat.shape[0]
+    sim_mat = (_zscore(exp_mat).T @ _zscore(ref_exp_mat)) / n_genes
 
     return pd.DataFrame(sim_mat, columns=ref_sample_list, index=sample_list)
 
