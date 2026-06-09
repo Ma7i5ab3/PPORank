@@ -30,6 +30,9 @@ OUT_PREFIX  <- file.path(DATA_DIR, "pRRophetic_TCGA_BRCA")
 # ─────────────────────────────────────────────────────────────────────────────
 expr_files <- c(
     list.files(FIREHOSE_DIR,
+               pattern = "mRNAseq_RSEM_normalized_log2\\.txt$",
+               recursive = TRUE, full.names = TRUE),
+    list.files(FIREHOSE_DIR,
                pattern = "RSEM_genes_normalized.*data\\.txt$",
                recursive = TRUE, full.names = TRUE),
     list.files(FIREHOSE_DIR,
