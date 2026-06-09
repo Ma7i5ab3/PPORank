@@ -36,7 +36,7 @@ gdsc_X        = gdsc_gex['X']
 gdsc_Y        = gdsc_gex['Y']
 gdsc_drug_ids = gdsc_gex['drug_ids'].astype(int)
 gdsc_drug_names = gdsc_gex['drug_names']
-gdsc_samples  = gdsc_gex['cell_ids']
+gdsc_samples  = gdsc_gex['cell_names']
 print(f'gdsc_X: {gdsc_X.shape}  gdsc_Y: {gdsc_Y.shape}')
 
 # Column index of each BRCA drug of interest in the GDSC IC50 matrix
@@ -82,9 +82,9 @@ print(f'After cell-line intersection: {train_X.shape[0]} cell lines')
 #   Positions 13–15 encode the sample type (01A = primary solid tumor, first aliquot)
 #   Positions 0–11 are the patient identifier (12 chars)
 # ─────────────────────────────────────────────────────────────────────────────
-sample_types = np.array([x[13:16] for x in test_samples])
+sample_types = np.array([x[13:15] for x in test_samples])
 test_samples = np.array([x.upper().replace('.', '-')[:12] for x in test_samples])
-is_tumor     = sample_types == '01A'
+is_tumor     = sample_types == '01'
 test_X       = test_X[is_tumor]
 test_samples = test_samples[is_tumor]
 print(f'After primary-tumor filter: {test_X.shape[0]} TCGA patients')
@@ -92,7 +92,7 @@ print(f'After primary-tumor filter: {test_X.shape[0]} TCGA patients')
 # ─────────────────────────────────────────────────────────────────────────────
 # Step 5 — Remove genes with NaN values in TCGA
 # ─────────────────────────────────────────────────────────────────────────────
-not_nan = ~np.isnan(test_X[0])
+not_nan = ~np.any(np.isnan(test_X), axis=0)
 test_X  = test_X[:, not_nan]
 train_X = train_X[:, not_nan]
 

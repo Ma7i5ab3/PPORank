@@ -112,6 +112,17 @@ gdsc_pheno <- tryCatch({
 
 message("  GDSC expression: ", nrow(gdsc_expr), " genes x ", ncol(gdsc_expr), " cell lines")
 
+# pRRophetic's internal GDSC data has NA-named and duplicate cell line columns;
+# homogenizeData fails when these become row names after transposition.
+na_cols  <- is.na(colnames(gdsc_expr))
+dup_cols <- duplicated(colnames(gdsc_expr)) & !na_cols
+bad_cols <- na_cols | dup_cols
+if (any(bad_cols)) {
+    message("  Removing ", sum(bad_cols), " bad cell line columns (",
+            sum(na_cols), " NA-named, ", sum(dup_cols), " duplicates)")
+    gdsc_expr <- gdsc_expr[, !bad_cols]
+}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Step 3 — Harmonize via ComBat (pRRophetic::homogenizeData)
 # ─────────────────────────────────────────────────────────────────────────────
