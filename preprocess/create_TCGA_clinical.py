@@ -91,22 +91,21 @@ def load_clinical_ihc(data_dir):
     Firehose Clinical_Pick_Tier1 files have patients as COLUMNS and variables
     as rows; patient IDs are lowercase (e.g. tcga-3c-aaau).
     """
-    clin_dir = find_file(
+    # Prefer the full Merge_Clinical archive (has ER/PR/HER2 IHC columns);
+    # fall back to Clinical_Pick_Tier1 which only has Tier-1 variables.
+    clin_file = find_file(
         data_dir,
-        'gdac.broadinstitute.org_BRCA.Clinical_Pick_Tier1.Level_4.*',
-        recursive=False
+        'gdac.broadinstitute.org_BRCA.Merge_Clinical.Level_1.*/BRCA.clin.merged.txt',
     )
-    if clin_dir is None:
-        # Try searching for the extracted directory
+    if clin_file is None:
         clin_dir = os.path.join(
             data_dir,
             'gdac.broadinstitute.org_BRCA.Clinical_Pick_Tier1.Level_4.2016012800.0.0'
         )
-
-    clin_file = find_file(clin_dir or data_dir,
-                          'BRCA.clin.merged.picked.txt',
-                          'BRCA.merged.picked.txt',
-                          '*.clin.merged.picked.txt')
+        clin_file = find_file(clin_dir or data_dir,
+                              'BRCA.clin.merged.picked.txt',
+                              'BRCA.merged.picked.txt',
+                              '*.clin.merged.picked.txt')
     if clin_file is None:
         raise FileNotFoundError(
             "Clinical_Pick_Tier1 file not found. "
@@ -130,9 +129,15 @@ def load_clinical_ihc(data_dir):
                 return col_map[c]
         return None
 
-    er_col  = get_col('er_status_by_ihc',  'breast_carcinoma_estrogen_receptor_status')
-    pr_col  = get_col('pr_status_by_ihc',  'breast_carcinoma_progesterone_receptor_status')
-    her_col = get_col('ihc_her2',          'lab_proc_her2_neu_immunohistochemistry_receptor_status',
+    er_col  = get_col('er_status_by_ihc',
+                      'breast_carcinoma_estrogen_receptor_status',
+                      'patient.breast_carcinoma_estrogen_receptor_status')
+    pr_col  = get_col('pr_status_by_ihc',
+                      'breast_carcinoma_progesterone_receptor_status',
+                      'patient.breast_carcinoma_progesterone_receptor_status')
+    her_col = get_col('ihc_her2',
+                      'lab_proc_her2_neu_immunohistochemistry_receptor_status',
+                      'patient.lab_proc_her2_neu_immunohistochemistry_receptor_status',
                       'her2_status_by_ihc')
 
     missing = [n for n, c in [('ER', er_col), ('PR', pr_col), ('HER2', her_col)] if c is None]
@@ -165,12 +170,7 @@ def load_chr17(data_dir):
     i.e. chr17_pos is True when log2(CN/2) >= 2 → absolute CN >= 8.
     This flags patients with high-level chr17 amplification (HER2 amplicon).
     """
-    seg_dir_pattern = (
-        'gdac.broadinstitute.org_BRCA.Merge_snp__genome_wide_snp_6__'
-        'broad_mit_edu__Level_3__segmented_scna_hg19__seg.Level_3.*'
-    )
-    seg_dir = find_file(data_dir, seg_dir_pattern, recursive=False)
-    seg_file = find_file(seg_dir or data_dir,
+    seg_file = find_file(data_dir,
                          'BRCA.snp__genome_wide_snp_6__broad_mit_edu__Level_3__segmented_scna_hg19__seg.seg.txt',
                          '*.hg19.seg.txt',
                          '*.seg.txt')
