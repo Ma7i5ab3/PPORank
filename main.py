@@ -67,8 +67,8 @@ def main(Debug=False):
     utils.create_save_dir(args.saved_dir)
     data_dir = os.path.join(os.getcwd(), args.Data)
 
-    dtype = torch.DoubleTensor
-    # dtype = torch.FloatTensor
+    dtype = torch.FloatTensor
+    # dtype = torch.DoubleTensor
 
     early_stopping_iter = 100000
     early_stopping_counter = 0

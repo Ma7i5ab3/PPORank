@@ -22,10 +22,10 @@ def validate(agent, test_loader, args, device):
             input, true_scores = batch
             input_var = input.clone().detach().requires_grad_(False).to(device)
             if args.algo == 'ppo':
-                output, _ = agent.actor_critic(input_var)  # .squeeze().type(torch.DoubleTensor)
+                output, _ = agent.actor_critic(input_var)  # .squeeze().type(torch.FloatTensor)
                 output = output.squeeze()
             elif args.algo == 'pg':
-                output = agent.policy_net(input_var).squeeze().type(torch.DoubleTensor)
+                output = agent.policy_net(input_var).squeeze().type(torch.FloatTensor)
 
             preds.append(output.cpu().squeeze().detach().numpy())
             ndcg_val = Reward_utils.ndcg(
@@ -117,9 +117,9 @@ def evaluation(agent, data_loader, device, resume_file, algo, args):
             input, true_scores = batch
             input_var = input.clone().detach().requires_grad_(False).to(device)
             if algo == 'ppo':
-                output = agent.actor_critic(input_var).squeeze().type(torch.DoubleTensor)
+                output = agent.actor_critic(input_var).squeeze().type(torch.FloatTensor)
             elif algo == 'pg':
-                output = agent.policy_net(input_var).squeeze().type(torch.DoubleTensor)
+                output = agent.policy_net(input_var).squeeze().type(torch.FloatTensor)
             preds.append(output.cpu().squeeze().detach().numpy())
             ndcg_val = Reward_utils.ndcg(
                 true_scores.numpy(),

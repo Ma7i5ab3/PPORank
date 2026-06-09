@@ -131,59 +131,62 @@ class RolloutStorage():
         # scores: [num_process,M] ts, true_scores:[num_process,M] ts
         num_process = scores.size()[0]
         M = scores.size()[1]
+        device = scores.device
+
+        drug_bool = torch.isnan(true_scores)  # (B,M)
+        M0_per_cell = torch.sum(~drug_bool, dim=1)  # (B,)
+        max_M0 = int(M0_per_cell.max().item())
+
+        filter_masks = torch.zeros_like(scores).masked_fill(drug_bool, float('-inf'))  # (B,M)
+
+        # scores, critic_inputs and the cell-line observation stay constant for the whole rollout
+        # (only filter_masks evolves step by step), so the value prediction and actor observation
+        # can be batched once up front instead of being recomputed identically at every single step
+        value_pred_all = agent.actor_critic.get_value_from_actor(critic_inputs)  # (B,1,L)
+        obs_actor_all = input[:, 0, :-1]  # (B,P)
+
+        filter_masks_hist = torch.empty(max_M0, num_process, M, device=device, dtype=scores.dtype)
+        actions_hist = torch.empty(max_M0, num_process, dtype=torch.long, device=device)
+        rewards_hist = torch.empty(max_M0, num_process, device=device, dtype=scores.dtype)
+        log_pi_hist = torch.empty(max_M0, num_process, 1, device=device, dtype=scores.dtype)
+        dist_entropy_hist = torch.empty(max_M0, num_process, 1, device=device, dtype=scores.dtype)
+
+        for step in range(max_M0):
+            filter_masks_hist[step] = filter_masks
+            selected_drug_id, _ = agent.actor_critic.sample_action(scores, filter_masks)  # (B,)
+            log_prob, dist_entropy = agent.actor_critic.get_log_prob(scores, filter_masks, selected_drug_id)
+
+            actions_hist[step] = selected_drug_id
+            rewards_hist[step] = (2 ** torch.gather(true_scores, 1, selected_drug_id.unsqueeze(-1)).squeeze(-1) - 1) \
+                / np.log2(step + 2)
+            log_pi_hist[step] = log_prob
+            dist_entropy_hist[step] = dist_entropy
+
+            # freeze filter_masks once a cell's episode has reached its last valid step, mirroring the
+            # original "if step < M0-1" guard — without this, fully-exhausted rows (all -inf logits)
+            # would reach Categorical() and fail its argument validation (logits - logsumexp = NaN)
+            scattered = filter_masks.scatter(1, selected_drug_id.unsqueeze(-1), float('-inf'))
+            keep_old = (step >= M0_per_cell - 1).unsqueeze(-1)  # (B,1)
+            filter_masks = torch.where(keep_old, filter_masks, scattered)
+
         paths = []
-        time_steps_this_batch = 0
-
         for cell in range(num_process):
-            rewards_single = []
-            obs_actor_single = []
-            acs_single = []
-            log_pi_single = []
-            dist_entropy_single = []
-            # obs_single = []
-            value_pred_single = []
-            drug_bool = torch.isnan(true_scores[cell])
-            M0 = torch.sum(~drug_bool)
-            if M0.item() == 0:
+            M0_t = M0_per_cell[cell]
+            M0 = int(M0_t.item())
+            if M0 == 0:
                 continue
-            filter_masks = torch.zeros_like(scores[0])
-            filter_masks = filter_masks.masked_fill_(drug_bool, float('-inf')).clone()
-            for step in range(M0):
-                self.filter_masks[step+self.steps].copy_(filter_masks)
-                selected_drug_id, _ = agent.actor_critic.sample_action(scores[cell], filter_masks)  # is a tensor
-                acs_single.append(selected_drug_id)
-                rewards_single.append((2**true_scores[cell][selected_drug_id]-1)/np.log2(step+2))  # tensor
-                log_prob, dist_entropy = agent.actor_critic.get_log_prob(scores[cell], filter_masks, selected_drug_id)
-                log_pi_single.append(log_prob)
-                dist_entropy_single.append(dist_entropy)
-                ob_critic = agent.actor_critic.get_fts_vecs(input[cell], filter_masks)
-                if step < M0-1:
-                    filter_masks[selected_drug_id] = float('-inf')
-
-                #value_pre = agent.actor_critic.get_value(input[cell], filter_masks)
-                value_pre = agent.actor_critic.get_value_from_actor(critic_inputs[cell].unsqueeze(0))
-                value_pred_single.append(value_pre[0])
-                # obs_single.append(ob_critic)
-                obs_actor_single.append(input[cell][0][:-1].unsqueeze(0).clone())
+            self.filter_masks[self.steps:self.steps+M0].copy_(filter_masks_hist[:M0, cell])
             self.end_masks_ind[cell] = M0
             self.masks[M0+self.steps-1] = 0.0
-            self.steps += M0
-            path = {"rewards": torch.stack(rewards_single),
-                    "log_pi": log_pi_single,  # log_pi_single each element requires grad, so can't be used as np
-                    "dist_entropy": dist_entropy_single,  # try to consider torch.stack
-                    "actions": torch.stack(acs_single),
-                    # "obs_critic": torch.stack(obs_single, axis=0),
-                    "value_pred": value_pred_single,
-                    "obs_actor": torch.stack(obs_actor_single, axis=0),
+            self.steps += M0_t  # keep self.steps a tensor (matches original, .item() used downstream)
+            path = {"rewards": rewards_hist[:M0, cell].clone(),
+                    "log_pi": [log_pi_hist[step, cell] for step in range(M0)],
+                    "dist_entropy": [dist_entropy_hist[step, cell] for step in range(M0)],
+                    "actions": actions_hist[:M0, cell].clone(),
+                    "value_pred": [value_pred_all[cell] for _ in range(M0)],
+                    "obs_actor": obs_actor_all[cell].unsqueeze(0).unsqueeze(0).expand(M0, 1, -1).clone(),
                     }
-            time_steps_this_batch += M0
             paths.append(path)
-
-        time_steps_this_batch = self.steps
-
-        # concatenate
-
-        # self.rewards[:self.steps].copy_(torch.cat(reward))
 
         return paths  # this is a batch for training, total steps of M*num_process
 

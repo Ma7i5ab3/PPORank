@@ -316,10 +316,10 @@ class LinearModel(nn.Module):
         self.nlayers_cross = nlayers_cross
         self.nlayers_deep = nlayers_deep
 
-        self.drug_embedding = nn.Embedding(M, drug_dim, max_norm=1).double()
+        self.drug_embedding = nn.Embedding(M, drug_dim, max_norm=1).float()
         nn.init.orthogonal_(self.drug_embedding.weight.data)
 
-        self.cell_layer = nn.Linear(self.gene_dim, self.cell_dim).double()
+        self.cell_layer = nn.Linear(self.gene_dim, self.cell_dim).float()
 
         self.drug_embedding.weight.requires_grad = True
         nn.init.orthogonal_(self.cell_layer.weight.data)
@@ -362,7 +362,7 @@ class DeepCrossModel(nn.Module):
         self.nlayers_cross = nlayers_cross
         self.nlayers_deep = nlayers_deep
 
-        self.drug_embedding = nn.Embedding(M, drug_dim, max_norm=1).double()
+        self.drug_embedding = nn.Embedding(M, drug_dim, max_norm=1).float()
         #self.drug_embedding = nn.Embedding(M, drug_dim).double()
         if drug_embedding:
             self.drug_embedding.weight.data.copy_(drug_embedding)
@@ -374,7 +374,7 @@ class DeepCrossModel(nn.Module):
 
         input_sizes = [self.N, self.M, self.gene_dim]
 
-        self.cell_layer = nn.Linear(self.gene_dim, self.cell_dim).double()
+        self.cell_layer = nn.Linear(self.gene_dim, self.cell_dim).float()
 
         # if cell_mean is not None:
         #     self.cell_layer.bias.data.copy_(cell_mean)
@@ -392,10 +392,10 @@ class DeepCrossModel(nn.Module):
 
         self.x0_dim = drug_dim+cell_dim+1
 
-        self.cross_classifier = CrossNet(self.x0_dim, self.nlayers_cross, drug_mean).double()
+        self.cross_classifier = CrossNet(self.x0_dim, self.nlayers_cross, drug_mean).float()
         # self.deep_classifier = build_mlp(self.x0_dim, deep_out_size, nlayers_deep, hidden_sizes).double()
         self.deep_classifier = DeepNet(self.x0_dim, deep_out_size, nlayers_deep,
-                                       hidden_sizes, dropout_rates=dropout_rates).double()
+                                       hidden_sizes, dropout_rates=dropout_rates).float()
 
         in_final_dim = deep_out_size + self.x0_dim + 1  # 1 is for cosine similarity
 
@@ -403,10 +403,10 @@ class DeepCrossModel(nn.Module):
 
         #
         self.activation = nn.ReLU()
-        self.BN = nn.BatchNorm1d(in_final_dim).double()
+        self.BN = nn.BatchNorm1d(in_final_dim).float()
         #self.drop_out = nn.Dropout(p=0.2)
         # input 3-D, so output_size=1 in the 3rd dim
-        self.classifierF = nn.Linear(in_final_dim, 1, bias=True).double()
+        self.classifierF = nn.Linear(in_final_dim, 1, bias=True).float()
         nn.init.constant_(self.classifierF.bias, 10.0)
         if overall_mean:
             self.classifierF.bias.data.copy_(overall_mean)

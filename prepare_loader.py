@@ -39,7 +39,7 @@ class NoiseCellDrugDataset(Dataset):
         self.Ytrain = np.array(pd.read_csv(os.path.join(data_dir, Ytrain_fn), index_col=0))
         self.sigma = sigma
         self.mu = mu
-        self.dtype = torch.DoubleTensor
+        self.dtype = torch.FloatTensor
         self.N, self.P = self.Xtrain_origin.shape
         self.M = self.Ytrain.shape[1]
         if ess_genes_fn:
@@ -67,9 +67,9 @@ class NoiseCellDrugDataset(Dataset):
         cell_fts = (cell_fts-self.Xmean)/self.Xstd
         train_sample = np.concatenate((cell_fts, drug_ind), axis=2).squeeze()  # (M,P+1)
         true_scores = self.Ytrain[idx]  # (M,)
-        train_sample = torch.from_numpy(train_sample)  # (M,P+1)
+        train_sample = torch.from_numpy(train_sample).float()  # (M,P+1)
 
-        true_scores = torch.from_numpy(true_scores)
+        true_scores = torch.from_numpy(true_scores).float()
 
         return train_sample, true_scores
 
@@ -107,6 +107,10 @@ def prepare_loader(data_dir, args, f=None, pretrain=False):
 
     # Xtrain and Ytrain are all
     WP, drug_embs = load_PQ_WP_embs(data_dir, f, args.pretrain)  # only drugs_emb in tensor
+    if WP is not None:
+        WP = WP.float()
+    if drug_embs is not None:
+        drug_embs = drug_embs.float()
 
     ###
     xscaler = StandardScaler()
@@ -121,28 +125,28 @@ def prepare_loader(data_dir, args, f=None, pretrain=False):
     cell_fts_dim = Xtrain.shape[1]  # 985 or 1610
     #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    dtype = torch.DoubleTensor
+    dtype = torch.FloatTensor
     train_drug_inds = np.arange(M).reshape(1, M).repeat(N, axis=0).reshape(N, M, 1)
     train_cell_fts = np.repeat(Xtrain[:, np.newaxis, :], M, axis=1)  # (788,223,985)
     train_input = np.concatenate((train_cell_fts, train_drug_inds), axis=2)  # train_input[i] shape is (265,1611)
-    train_input = torch.from_numpy(train_input)  # (N,M,P+1)
+    train_input = torch.from_numpy(train_input).float()  # (N,M,P+1)
 
     # Ytrain shape is (N,M), train_true_scores[i] shape is (265,)
-    train_true_scores = torch.from_numpy(Ytrain)
+    train_true_scores = torch.from_numpy(Ytrain).float()
     cell_mean_score = np.nanmean(Ytrain, axis=1)  # (N,)
     drug_mean_score = np.nanmean(Ytrain, axis=0)  # (M,)
     overall_mean_score = np.nanmean(Ytrain)
 
     train_dataset = TensorDataset(train_input, train_true_scores)
 
-    test_true_scores = torch.from_numpy(Ytest)
+    test_true_scores = torch.from_numpy(Ytest).float()
     N1 = Xtest.shape[0]
     M1 = Ytest.shape[1]
     test_drug_inds = np.arange(M1).reshape(1, M1).repeat(N1, axis=0).reshape(N1, M1, 1)
     test_cell_fts = np.repeat(Xtest[:, np.newaxis, :], M1, axis=1)  # (197,223,985)
 
     test_input = np.concatenate((test_cell_fts, test_drug_inds), axis=2)
-    test_input = torch.from_numpy(test_input)
+    test_input = torch.from_numpy(test_input).float()
     test_dataset = TensorDataset(test_input, test_true_scores)
     # test_loader=DataLoader(test_dataset,batch_size=args.batch_size,shuffle=False)
 
@@ -183,7 +187,7 @@ def prepare_loader_simu(data_dir, args, f=None):
 
     if os.path.exists(drug_embs_fn):
         drug_embs = np.asarray(pd.read_csv(drug_embs_fn, index_col=0))
-        drug_embs = torch.from_numpy(drug_embs)
+        drug_embs = torch.from_numpy(drug_embs).float()
     else:
         drug_embs = None
 
@@ -204,12 +208,12 @@ def prepare_loader_simu(data_dir, args, f=None):
             scaler = MaxAbsScaler()
             Ytrain = scaler.fit_transform(Ytrain)
 
-    dtype = torch.DoubleTensor
+    dtype = torch.FloatTensor
 
     WP_fn = os.path.join(WP_dir, "WPmatrix.csv")
 
     if os.path.exists(WP_fn):
-        WP = torch.from_numpy(np.asarray(pd.read_csv(WP_fn, index_col=0)))
+        WP = torch.from_numpy(np.asarray(pd.read_csv(WP_fn, index_col=0))).float()
     else:
         # WP = torch.from_numpy(np.identity(cell_fts_dim)).type(dtype)
         # WP = torch.zeros(N, args.f)
@@ -218,9 +222,9 @@ def prepare_loader_simu(data_dir, args, f=None):
     train_drug_inds = np.arange(M).reshape(1, M).repeat(N, axis=0).reshape(N, M, 1)
     train_cell_fts = np.repeat(Xtrain[:, np.newaxis, :], M, axis=1)
     train_input = np.concatenate((train_cell_fts, train_drug_inds), axis=2)
-    train_input = torch.from_numpy(train_input)
+    train_input = torch.from_numpy(train_input).float()
 
-    train_true_scores = torch.from_numpy(Ytrain)
+    train_true_scores = torch.from_numpy(Ytrain).float()
     train_dataset = TensorDataset(train_input, train_true_scores)
     #train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
@@ -234,7 +238,7 @@ def prepare_loader_simu(data_dir, args, f=None):
     test_cell_fts = np.repeat(Xtest[:, np.newaxis, :], M1, axis=1)  # (197,223,985)
 
     test_input = np.concatenate((test_cell_fts, test_drug_inds), axis=2)
-    test_input = torch.from_numpy(test_input)
+    test_input = torch.from_numpy(test_input).float()
     #test_noise_scores = torch.from_numpy(Ynoise_test).type(dtype)
     test_dataset = TensorDataset(test_input, test_true_scores)
     # test_loader=DataLoader(test_dataset,batch_size=args.batch_size,shuffle=False)

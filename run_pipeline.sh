@@ -46,7 +46,7 @@ STEP_START=$(date +%s)
 if [ -f "$DATA_DIR/GDSC_GEX.npz" ]; then
     log "    GDSC_GEX.npz already exists — skipping Step 1"
 else
-    $PYTHON preprocess/load_dataset.py preprocess/load_GDSC.txt 2>&1 | tee -a "$LOG_FILE"
+    "$PYTHON" preprocess/load_dataset.py preprocess/load_GDSC.txt 2>&1 | tee -a "$LOG_FILE"
     log "    Step 1 done in $(elapsed $STEP_START)s"
 fi
 
@@ -63,11 +63,11 @@ if [ -f "$FOLD0_CHECK" ]; then
         log "    MF pretrained weights already exist — skipping Step 2"
     else
         log "    Folds exist but MF weights missing — re-running --decompose only"
-        $PYTHON prepare.py --decompose 2>&1 | tee -a "$LOG_FILE"
+        "$PYTHON" prepare.py --decompose 2>&1 | tee -a "$LOG_FILE"
         log "    Step 2 (decompose only) done in $(elapsed $STEP_START)s"
     fi
 else
-    $PYTHON prepare.py --decompose 2>&1 | tee -a "$LOG_FILE"
+    "$PYTHON" prepare.py --decompose 2>&1 | tee -a "$LOG_FILE"
     log "    Step 2 done in $(elapsed $STEP_START)s"
 fi
 
@@ -88,7 +88,7 @@ for FOLD_IDX in $(seq 0 $(( NFOLDS - 1 ))); do
         continue
     fi
 
-    $PYTHON main.py \
+    "$PYTHON" main.py \
         --num_processes "$NUM_PROCESSES" \
         --Data "$DATA_DIR" \
         --analysis "$ANALYSIS" \
@@ -107,7 +107,7 @@ log ""
 log ">>> STEP 4: Aggregating results"
 STEP_START=$(date +%s)
 
-$PYTHON results.py --config ./configs/configG_FULL.yaml 2>&1 | tee results_ppo.txt
+"$PYTHON" results.py --config ./configs/configG_FULL.yaml 2>&1 | tee results_ppo.txt
 log "    Results written to results_ppo.txt  [$(elapsed $STEP_START)s]"
 
 # ── Done ─────────────────────────────────────────────────────────────────────
