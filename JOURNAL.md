@@ -88,6 +88,39 @@ Path corrections and minor bug fixes:
 | `set_log.py` | `args.Data` → `args.Data.replace('/', '_')` in log name construction — prevents `data/GDSC_ALL` from creating a subdirectory in the log name |
 | `utils.py` | Same `.replace('/', '_')` fix in `create_model_name` for both PPO and non-PPO branches |
 
+### Session 2026-06-09 — TCGA pipeline + SimuData
+
+#### New scripts created
+
+| File | Purpose |
+|------|---------|
+| `preprocess/breast_cancer_analysis.R` | pRRophetic ComBat harmonization: TCGA RNA-seq + GDSC microarray → 3 CSV.gz intermediate files |
+| `preprocess/create_TCGA_data.py` | Python 3 port of KRL `create_TCGA_data.py` → `TCGA_BRCA.npz` |
+| `preprocess/create_TCGA_clinical.py` | Assembles `TCGA_BRCA_clinical.csv.gz` from 4 sources |
+| `preprocess/generate_simu_data.py` | Generates X, W, Y CSVs for simulation experiments (linear/quad/exp scenarios) |
+| `preprocess/split_simu_data.py` | Standalone CV-fold splitter for SimuData (no torch/CaDRRes dependency) |
+| `Simulation/__init__.py` | Package init |
+| `Simulation/utils_simu.py` | `noramlize_y` and `read_simu` stubs (required by `prepare_simu.py`) |
+| `preprocess/__init__.py` | Added to make preprocess a proper package |
+
+#### Bugs fixed
+
+| Script | Bug | Fix |
+|--------|-----|-----|
+| `breast_cancer_analysis.R` | Pattern `RSEM_genes_normalized` not present; actual file is `BRCA.uncv2.mRNAseq_RSEM_normalized_log2.txt` | Added `mRNAseq_RSEM_normalized_log2` as first pattern candidate |
+| `breast_cancer_analysis.R` | pRRophetic internal GDSC has 46 NA-named + 4 duplicate cell line columns → ComBat crash | Remove bad columns before `homogenizeData()` |
+| `create_TCGA_data.py` | Used `gdsc_gex['cell_ids']` (numeric strings) instead of `cell_names` → 0 intersection | Changed to `cell_names` |
+| `create_TCGA_data.py` | TCGA barcodes from pRRophetic are short (`TCGA-XX-XXXX-01`, 15 chars); filter `x[13:16]=='01A'` failed | Changed to `x[13:15]=='01'` |
+| `create_TCGA_data.py` | NaN filter `~np.isnan(test_X[0])` only checked first patient | Changed to `~np.any(np.isnan(test_X), axis=0)` → removes 4276 genes with any NaN |
+| `create_TCGA_clinical.py` | `Clinical_Pick_Tier1` file has no ER/PR/HER2 IHC columns | Switched to `Merge_Clinical.Level_1/BRCA.clin.merged.txt` |
+| `create_TCGA_clinical.py` | Glob for SNP6 segment dir returned `.tar.gz` first | Simplified: search for `.seg.txt` recursively from data_dir |
+
+#### Data downloaded
+
+- Firehose BRCA 2016-01-28: mRNAseq (1.5GB), Merge_Clinical (3.5MB), RPPA (2MB), SNP6 hg19 (18MB)
+- pRRophetic_0.5.tar.gz from OSF (493MB) — installed via `R CMD INSTALL`
+- Maxwell et al. 2017 Supp Data 1 (`MOESM2_ESM.xlsx`) from Springer CDN
+
 ---
 
 ## Added `requirements.txt`
@@ -181,8 +214,8 @@ Metrics: full-rank NDCG, NDCG@k and Precision@k for k ∈ {1, 5, 10}.
 | GDSC CNV | ✅ `GDSC_CNV.npz` generated | 985 cell lines, 425 segments |
 | GDSC MET | ❌ permanently lost | File not found on cancerrxgene.org, Wayback Machine, DepMap, Zenodo |
 | CCLE | ✅ kernel + IC50 present | `CCLE_cellline_pcor_ess_genes.csv` (1037×1037), `CCLE_all_abs_ic50_bayesian_sigmoid.csv` (504×24), `CCLE_drugMedianGE0.txt` |
-| SimuData | ❓ not generated yet | `preprocess/prepare_simu.py` generates it; needs to be run |
-| TCGA BRCA | ⚠️ partial | `misc.py` present (commit `a738f83`); `TCGA_BRCA.npz` and `TCGA_BRCA_clinical.csv.gz` still missing — require R pipeline (see TCGA section below) |
+| SimuData | ✅ generated | N=1000 and N=10000; 3 scenarios (linear/quad/exp); 5-fold CV splits in `data/SimuData/N*/`; see TCGA section for details |
+| TCGA BRCA | ✅ complete | `TCGA_BRCA.npz` (960 CCL × 10915 genes, 1093 patients) and `TCGA_BRCA_clinical.csv.gz` (2245 patients × 6 cols) generated 2026-06-09 |
 
 **Note on drug count discrepancy**: the paper reports 223 GDSC drugs (after removing toxic drugs) and 19 CCLE drugs, but the config uses `k_max: [265, 26]` and the .npz files contain 265 GDSC drugs. Toxic drug filtering appears to happen inside the pipeline (possibly in `preprocess/toxic_data.py`) and must be verified.
 
@@ -221,7 +254,12 @@ python main.py --config configs/configC.yaml
 ### Simulations (Experiments 7, 8)
 
 ```bash
-python preprocess/prepare_simu.py   # generate synthetic data
+# Data already generated (2026-06-09):
+#   python preprocess/generate_simu_data.py --N 1000
+#   python preprocess/generate_simu_data.py --N 10000
+#   python preprocess/split_simu_data.py --N 1000
+#   python preprocess/split_simu_data.py --N 10000
+
 python prepare.py --config configs/configSimu.yaml   # config to be created
 python main.py --config configs/configSimu.yaml
 ```
@@ -235,50 +273,90 @@ python results_TCGA.py
 
 ---
 
-## TCGA data pipeline (Experiment 6)
+## TCGA data pipeline (Experiment 6) — COMPLETED 2026-06-09
 
-`results_TCGA.py` needs two files in `data/GDSC_ALL/`:
+Both output files are present in `data/GDSC_ALL/`. This section documents the full pipeline for reproducibility.
+
+### Output files
 
 | File | Content |
 |------|---------|
-| `TCGA_BRCA.npz` | `test_X` (harmonized TCGA gene expression, 1080 patients) and `test_ids` (TCGA patient IDs) |
-| `TCGA_BRCA_clinical.csv.gz` | Clinical annotations indexed by patient ID: columns ER, PR, HER2, CHR17, BRCA_germline, JAK2_RPPA |
+| `TCGA_BRCA.npz` | `train_X` (960×10915), `train_Y` (960×265), `test_X` (1093×10915), `test_ids` (1093 patient IDs), `drug_ids`, `drug_names` |
+| `TCGA_BRCA_clinical.csv.gz` | 2245 patients × 6 columns: ER, PR, HER2, CHR17, BRCA_germline, JAK2_RPPA |
 
-Also requires `misc.py` in the project root — **downloaded from KRL repo and adapted for Python 3** (was using Python 2 `print >>` syntax).
+Sanity check vs paper: HER2+ = 164 (paper: 163 ✓), BRCA_germline ∩ test_ids = 37 (paper: 37 ✓).
 
-### Step 1 — Generate harmonized TCGA gene expression (R)
+### Step 0 — Install pRRophetic
 
-The paper uses the pRRophetic Bioconductor package (Geeleher et al 2017, Genome Research) to harmonize TCGA RNA-seq (Level 3, Illumina HiSeq v2) with GDSC microarray gene expression.
+pRRophetic is no longer on CRAN or Bioconductor. Install from the OSF archive:
 
-```r
-# Install pRRophetic in R
-if (!require("BiocManager")) install.packages("BiocManager")
-BiocManager::install("pRRophetic")
+```bash
+# Install R dependencies
+Rscript -e 'install.packages(c("car","ridge"), repos="https://cloud.r-project.org")'
+Rscript -e 'BiocManager::install(c("preprocessCore","genefilter","sva"))'
 
-# Download TCGA BRCA RNA-seq Level 3 from Broad Institute Firehose:
-# https://gdac.broadinstitute.org/ → BRCA → Stddata 2016-01-28 → mRNAseq_Preprocess
-
-# Run harmonization (produces pRRophetic_TCGA_BRCA_trainFrame.csv.gz,
-#                             pRRophetic_TCGA_BRCA_testFrame.csv.gz,
-#                             pRRophetic_TCGA_BRCA_preds.csv.gz)
-# See: Geeleher et al. Genome Res. 2017;27(10):1743-1751
+# Download tarball
+wget -O pRRophetic_0.5.tar.gz "https://osf.io/dwzce/?action=download"
+R CMD INSTALL pRRophetic_0.5.tar.gz
 ```
 
-### Step 2 — Create TCGA_BRCA.npz (Python, adapted from KRL)
+### Step 1 — Download Firehose archives
 
-The KRL repo provides `create_TCGA_data.py` which reads the pRRophetic output and `GDSC_GEX.npz`, then saves `KRL_data_for_TCGA_BRCA.npz` with keys `train_X`, `train_Y`, `test_X`, `test_ids`. The PPORank `results_TCGA.py` reads `TCGA_BRCA.npz` with the same keys, so the KRL output can be used directly after renaming/copying.
+```bash
+cd data/GDSC_ALL
+BASE="https://gdac.broadinstitute.org/runs/stddata__2016_01_28/data/BRCA/20160128"
+curl -L -O "$BASE/gdac.broadinstitute.org_BRCA.mRNAseq_Preprocess.Level_3.2016012800.0.0.tar.gz"
+curl -L -O "$BASE/gdac.broadinstitute.org_BRCA.Merge_Clinical.Level_1.2016012800.0.0.tar.gz"
+curl -L -O "$BASE/gdac.broadinstitute.org_BRCA.RPPA_AnnotateWithGene.Level_3.2016012800.0.0.tar.gz"
+curl -L -O "$BASE/gdac.broadinstitute.org_BRCA.Merge_snp__genome_wide_snp_6__broad_mit_edu__Level_3__segmented_scna_hg19__seg.Level_3.2016012800.0.0.tar.gz"
+for f in *.tar.gz; do tar -xzf "$f"; done
+```
 
-Note: `create_TCGA_data.py` from KRL also uses Python 2 syntax and would need adaptation.
+Maxwell et al. 2017 Supplementary Data 1 (germline BRCA mutations) can be auto-downloaded:
+```python
+# Already done — data/GDSC_ALL/maxwell2017_supp_data1.xlsx
+# Source: https://static-content.springer.com/esm/art%3A10.1038%2Fs41467-017-00388-9/MediaObjects/41467_2017_388_MOESM2_ESM.xlsx
+```
 
-### Step 3 — Assemble TCGA_BRCA_clinical.csv.gz
+### Step 2 — pRRophetic ComBat harmonization
 
-Required columns and sources:
-| Column | Source |
-|--------|--------|
-| `HER2`, `ER`, `PR` | TCGA BRCA clinical annotations (GDC or cBioPortal) |
-| `CHR17` | Chromosome 17 copy number from TCGA CNV data |
-| `BRCA_germline` | Maxwell et al. Nat Commun 2017 — germline BRCA1/2 loss-of-function mutations |
-| `JAK2_RPPA` | TCGA RPPA (reverse-phase protein array) data |
+```bash
+Rscript preprocess/breast_cancer_analysis.R
+```
+
+Produces `pRRophetic_TCGA_BRCA_{trainFrame,testFrame,preds}.csv.gz` in `data/GDSC_ALL/`.
+
+Key fixes applied vs naive pRRophetic call:
+- Expression file: `BRCA.uncv2.mRNAseq_RSEM_normalized_log2.txt` (1212 samples, already log2) — not RPKM
+- GDSC internal data has 46 NA-named + 4 duplicate cell line columns → removed before ComBat
+- 15097 common genes; ComBat reports 795643 missing values (handled internally)
+
+### Step 3 — Assemble TCGA_BRCA.npz
+
+```bash
+python preprocess/create_TCGA_data.py
+```
+
+Key fixes vs original KRL Python 2 code:
+- `gdsc_gex['cell_names']` (not `cell_ids`) for cell line name matching → 961 matches
+- TCGA barcodes from pRRophetic are short (15 chars, end in `01` not `01A`) → filter `x[13:15] == '01'`
+- NaN filter: `~np.any(np.isnan(test_X), axis=0)` (any patient, not just first) → 10915 genes retained
+
+### Step 4 — Assemble TCGA_BRCA_clinical.csv.gz
+
+```bash
+python preprocess/create_TCGA_clinical.py   # also: pip install openpyxl
+```
+
+Sources:
+| Column | Source file |
+|--------|-------------|
+| ER, PR, HER2 | `Merge_Clinical.Level_1/BRCA.clin.merged.txt` (columns: `patient.breast_carcinoma_estrogen_receptor_status`, `patient.breast_carcinoma_progesterone_receptor_status`, `patient.lab_proc_her2_neu_immunohistochemistry_receptor_status`) |
+| CHR17 | SNP6 hg19 segments — weighted mean Segment_Mean over chr17 |
+| BRCA_germline | `maxwell2017_supp_data1.xlsx` MOESM2 |
+| JAK2_RPPA | `RPPA_AnnotateWithGene.Level_3/BRCA.rppa.txt` |
+
+Note: CHR17 weighted mean across full chromosome 17 is always < 2 (chr17_pos = 0 for all patients). This is expected: the ≥2 threshold targets focal HER2 amplicon segments, not the chromosome-wide average. With chr17_pos=False for all, TNBC is defined purely by HER2/ER/PR IHC.
 
 ---
 
@@ -286,11 +364,13 @@ Required columns and sources:
 
 | Issue | Priority | Notes |
 |-------|----------|-------|
-| **MET modality** | Low | Cannot reproduce GEX+MET experiment (Figure 5 incomplete) |
-| **TCGA BRCA data** | High | `TCGA_BRCA.npz` not present; must download from Broad Institute Firehose 2016-01-28 and harmonize with GDSC gene expression (pipeline from Geeleher et al 2017) |
+| **MET modality** | Low | Cannot reproduce GEX+MET experiment (Figure 5 incomplete) — GDSC MET permanently lost |
+| **`prepare.py` not yet run** | High | Must run before any training; no fold splits found in `data/GDSC_ALL/CV/` |
 | **Toxic drug filtering** | High | Paper uses 223 GDSC drugs / 19 CCLE drugs; `.npz` files have 265 / 24; verify that `preprocess/toxic_data.py` is called correctly and produces the right filtered dataset |
 | **GDSC vs GDSC_ALL** | Medium | `config.yaml` uses `data: GDSC`; `configG_FULL.yaml` uses `data: GDSC_ALL`; check if they refer to the same preprocessed data or to two different subsets |
 | **CCLE config** | Medium | No `configC.yaml` exists; need to create it with correct dataset path, methods, and hyperparameters |
 | **SimuData config** | Medium | No config for simulation experiments; need to create it |
 | **CaDRRes preprocessing** | High | `preprocess_fts_cl_drug.py` must be run before training to generate CaDRRes input features; not yet verified |
-| **`prepare.py` not yet run** | High | Must run before any training; no fold splits found in `data/GDSC_ALL/CV/` as of 2026-06-05 |
+| **SimuData: `prepare_simu.py` requires PyTorch** | Medium | `prepare_simu.py` imports `utils.py` which imports torch; use `split_simu_data.py` (standalone) for CV splits; `prepare_simu.py` is only needed for CaDRRes pretraining on SimuData |
+| **TCGA BRCA data** | ✅ resolved | `TCGA_BRCA.npz` and `TCGA_BRCA_clinical.csv.gz` generated 2026-06-09 |
+| **SimuData** | ✅ resolved | N=1000 and N=10000 generated 2026-06-09; CV splits in `data/SimuData/` |
