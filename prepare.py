@@ -58,6 +58,8 @@ def parse_args():
     parser.add_argument("--essential_genes", default=True, action="store_false",
                         help="whether to use the essential genes")  # Number of dimensions
     parser.add_argument("--lr", type=float, default=0.01, help="learning rate for Caddres")
+    parser.add_argument("--iters", type=int, default=20000,
+                        help="number of MF (CaDRRes) pretraining iterations per fold")
 
     return parser.parse_args()
 
@@ -379,7 +381,7 @@ def Load_from_decompose():
 
 
 # Response_decompose(ss_df,cl_features_df,iters,lr,f,out_dir)
-def Pretrained_MF_split(iters=20000):
+def Pretrained_MF_split():
     args = parse_args()
     config_file = args.config
     gene_list_fn = args.gene_list_fn
@@ -403,6 +405,7 @@ def Pretrained_MF_split(iters=20000):
 
     f = args.f
     lr = args.lr
+    iters = args.iters
     if analysis == "FULL":
         out_dir = os.path.join(os.getcwd(), args.data_dir, args.CV_dir, analysis)
         mf_start = time.time()

@@ -1,0 +1,63 @@
+# Quick/dev variant of configG_FULL.yaml — smaller, faster, NOT for reporting results.
+# Used by run_pipeline_quick.sh (separate data/GDSC_ALL_QUICK dir + reduced folds/dims).
+analysis: FULL
+methods: ['KRR','KRL','CaDRRes','EN']
+# k-fold cross validation (reduced from 5 -> 2 for speed)
+nfolds: 2
+# "data" takes one of GEX, WES, CNV, MET
+data: GDSC_ALL_QUICK
+tunning: False
+
+Data_All: True
+seed: 1234
+
+# NOTE: keep f >= 68 (deep_out_size(64)+4). The critic's ConvValueNet pools
+# over a window of size f; for smaller f the pooled output length is >1 and
+# breaks RolloutStorage.sample_concatenate's reshape (shape mismatch).
+# Must match F in run_pipeline_quick.sh (results.py reads f from here to
+# locate the per-fold result files under results/<data>/FULL/<f>Dim/ppo/).
+f: 100
+
+# ranges of hyper-parameter values optimized using grid search on the training set
+# (see Supplementary data of the KRL paper for details)
+krl_lambdas: [0.001,0.01,0.1]
+krl_gammas: [0.001,0.01,0.1]
+kbmtl_alphas: [0.001]
+kbmtl_betas: [0.001]
+kbmtl_gammas: [0.001]
+krr_alphas: [0.001]
+krr_gammas: [0.001]
+rf_nestimators: [100]
+en_alphas: [0.001,0.01,0.1,1,10]
+en_l1ratios: [0.1,0.3,0.5,0.7,0.9]
+krl_k: 10
+tunning_params:
+  krl_lambdas: [0.001,0.01,0.1]
+  krl_gammas: [0.001,0.01,0.1]
+  kbmtl_alphas: [0.001,0.01,0.1]
+  kbmtl_betas: [0.001,0.01,0.1]
+  kbmtl_gammas: [0.0001,0.001,0.01]
+  krr_alphas: [0.001,0.01,0.1,1]
+  krr_gammas: [0.0001,0.001,0.01,0.1]
+  rf_nestimators: [100,1000]
+  en_alphas: [0.001,0.01,0.1,1,10]
+  en_l1ratios: [0.1,0.3,0.5,0.7,0.9]
+
+# evaluation parameter k in NDCG@k and Precision@k
+rank_ks: [1,5,10]
+
+keepk: 5
+rank_all: True
+keepk_ratios_G: [1.0, 0.5, 0.1]
+keepk_ratios_C: [1.0, 0.6, 0.3]
+keepk_ratios: [1.0, 0.5, 0.1]
+
+###max num of drugs for NDCG full
+k_max: [265,26]
+single_k: 265
+##
+
+#evaluation metrics
+cv_metric: ['NDCG',"precision"]
+
+Debug: False
