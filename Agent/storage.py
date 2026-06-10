@@ -180,10 +180,10 @@ class RolloutStorage():
             self.masks[M0+self.steps-1] = 0.0
             self.steps += M0_t  # keep self.steps a tensor (matches original, .item() used downstream)
             path = {"rewards": rewards_hist[:M0, cell].clone(),
-                    "log_pi": [log_pi_hist[step, cell] for step in range(M0)],
-                    "dist_entropy": [dist_entropy_hist[step, cell] for step in range(M0)],
+                    "log_pi": log_pi_hist[:M0, cell],
+                    "dist_entropy": dist_entropy_hist[:M0, cell],
                     "actions": actions_hist[:M0, cell].clone(),
-                    "value_pred": [value_pred_all[cell] for _ in range(M0)],
+                    "value_pred": value_pred_all[cell].unsqueeze(0).expand(M0, -1),
                     "obs_actor": obs_actor_all[cell].unsqueeze(0).unsqueeze(0).expand(M0, 1, -1).clone(),
                     }
             paths.append(path)
@@ -222,15 +222,11 @@ class RolloutStorage():
 
         time_steps_this_batch = self.steps
         re_n = torch.cat([path["rewards"] for path in paths])
-        log_pis = [path["log_pi"] for path in paths]
-        log_pi_n = torch.stack([y for x in log_pis for y in x])  # a single tensor [35]
+        log_pi_n = torch.cat([path["log_pi"] for path in paths])
         ac_n = torch.cat([path["actions"] for path in paths])
-        # ob_critic_n = torch.cat([path["obs_critic"] for path in paths]).squeeze()  # np ()
-        ob_actor_n = torch.cat([path["obs_actor"] for path in paths]).squeeze()  # np ()
-        d_ns = [path["dist_entropy"] for path in paths]
-        dist_entropy_n = torch.stack([y for x in d_ns for y in x])
-        v_ns = [path["value_pred"] for path in paths]
-        value_pred_n = torch.stack([y for x in v_ns for y in x]).squeeze()  # (35,1,1)
+        ob_actor_n = torch.cat([path["obs_actor"] for path in paths]).squeeze()
+        dist_entropy_n = torch.cat([path["dist_entropy"] for path in paths])
+        value_pred_n = torch.cat([path["value_pred"] for path in paths]).squeeze()
 
         #assert self.steps == re_n.shape[0]
         # self.obs_critic[:time_steps_this_batch].copy_(ob_critic_n)
@@ -281,19 +277,29 @@ class RolloutStorage():
                     steps += M0
         else:
             if use_gae:
-                gae = 0
                 steps = 0
+                coeff = gamma * gae_lambda
                 for cell in range(self.num_processes):
                     M0 = int(self.end_masks_ind[cell].item())
-                    self.returns[M0-1+steps] = self.rewards[M0+steps-1].clone()
-
-                    for step in reversed(range(M0-1)):
-                        delta = self.rewards[step+steps] + gamma * \
-                            self.value_preds[step + 1 + steps] - self.value_preds[step+steps]
-
-                        gae = delta + gamma * gae_lambda * gae
-
-                        self.returns[step+steps] = gae + self.value_preds[step+steps]
+                    if M0 > 0:
+                        sl = slice(steps, steps + M0)
+                        # Pull to CPU: avoids M0 individual CUDA sync points per cell
+                        r = self.rewards[sl, 0].cpu()
+                        v = self.value_preds[sl, 0].cpu()
+                        # delta[t] = r[t] + gamma*v[t+1] - v[t]; terminal: r[M0-1]
+                        delta = torch.empty(M0, dtype=r.dtype)
+                        if M0 > 1:
+                            delta[:-1] = r[:-1] + gamma * v[1:] - v[:-1]
+                        delta[-1] = r[-1]
+                        # Vectorized GAE via reverse-cumsum with discount factors:
+                        # GAE[t] = Σ_{k≥0} coeff^k * delta[t+k]
+                        discount = torch.pow(
+                            torch.tensor(coeff, dtype=r.dtype),
+                            torch.arange(M0, dtype=r.dtype))
+                        gae_vec = torch.flip(
+                            torch.cumsum(torch.flip(delta * discount, [0]), 0), [0]
+                        ) / discount
+                        self.returns[sl, 0] = (gae_vec + v).to(self.returns.device)
                     steps += M0
             else:
                 steps = 0
