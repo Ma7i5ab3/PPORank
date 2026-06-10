@@ -183,7 +183,7 @@ class RolloutStorage():
                     "log_pi": log_pi_hist[:M0, cell],
                     "dist_entropy": dist_entropy_hist[:M0, cell],
                     "actions": actions_hist[:M0, cell].clone(),
-                    "value_pred": value_pred_all[cell].unsqueeze(0).expand(M0, -1),
+                    "value_pred": value_pred_all[cell].unsqueeze(0).expand(M0, *[-1] * value_pred_all[cell].dim()),
                     "obs_actor": obs_actor_all[cell].unsqueeze(0).unsqueeze(0).expand(M0, 1, -1).clone(),
                     }
             paths.append(path)
