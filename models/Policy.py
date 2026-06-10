@@ -82,39 +82,44 @@ class Deep_Cross_Policy(nn.Module):
             self.classifierF.bias.data.copy_(overall_mean)
 
     def forward(self, input, filter_masks=None):
-
         # input:[B,M,cell_dim+1],filter_masks [B,M,1]
-        B, M, gene_dim = input.size()
-        filter_masks = torch.ones(
-            B, M, 1).to(
-            self.device) if filter_masks is None else filter_masks.view(
-            B, M, 1).to(
-            self.device)
-        input = input.cpu()
-        gene_dim -= 1
-        # direct slice is sharing memory, if cell_fts changes,input also changes
-        cell_fts = input.clone()[:, :, :-1]
-        drug_index = input.clone()[:, :, -1].long()
+        B, M, _ = input.size()
+        device = input.device
+        filter_masks = torch.ones(B, M, 1, device=device) if filter_masks is None \
+                       else filter_masks.view(B, M, 1).to(device)
 
-        cell_emb = self.cell_layer(cell_fts.to(self.device))  # .to(self.device)#(N,M,P1)
-        drug_emb = self.drug_embedding(drug_index.to(self.device))  # .to(self.device) #(N,M,P2)
-        drug_emb = drug_emb * filter_masks
+        # cell features are identical for all M drugs per cell — compute once and expand
+        cell_emb = self.cell_layer(input[:, 0, :-1]).unsqueeze(1).expand(-1, M, -1)  # (B,M,f)
+        drug_emb = self.drug_embedding(input[:, :, -1].long()) * filter_masks  # (B,M,f)
 
         cos1 = (cell_emb * drug_emb).sum(2).view(B, self.M, 1)
-        x0 = torch.cat((cell_emb, drug_emb, cos1), 2)  # (N,M,P1+P2+1)
+        x0 = torch.cat((cell_emb, drug_emb, cos1), 2)
 
-        D_out = self.deep_classifier(x0)  # hidden (N,M,hidden)
+        D_out = self.deep_classifier(x0)
+        C_out = self.cross_classifier(x0.view(-1, x0.size()[-1])).view(B, self.M, -1)
 
-        C_out = self.cross_classifier(x0.view(-1, x0.size()[-1])).view(B, self.M, -1)  # (N,M,P)
-        #C1_out = self.classifierC1(x0, C0_out)
-
-        in_final = torch.cat((D_out, C_out, cos1), 2)
-        in_final = self.activation(in_final)
+        in_final = self.activation(torch.cat((D_out, C_out, cos1), 2))
         in_final = self.BN(in_final)
-        # in_final = self.drop_out(in_final)
-
-        out = self.classifierF(in_final)  # [B,M,1]
+        out = self.classifierF(in_final)
         return out, in_final
+
+    def forward_from_obs(self, obs_actor, drug_inds):
+        """Efficient path for evaluate_actions: skips building the (B,M,P+1) input tensor.
+        filter_masks is not applied to drug_emb here — consistent with the normal forward()
+        path which is always called without filter_masks (defaults to ones, no effect)."""
+        B, M = drug_inds.shape
+        cell_emb = self.cell_layer(obs_actor).unsqueeze(1).expand(-1, M, -1)  # (B,M,f)
+        drug_emb = self.drug_embedding(drug_inds)  # (B,M,f)
+
+        cos1 = (cell_emb * drug_emb).sum(2).view(B, self.M, 1)
+        x0 = torch.cat((cell_emb, drug_emb, cos1), 2)
+
+        D_out = self.deep_classifier(x0)
+        C_out = self.cross_classifier(x0.view(-1, x0.size()[-1])).view(B, self.M, -1)
+
+        in_final = self.activation(torch.cat((D_out, C_out, cos1), 2))
+        in_final = self.BN(in_final)
+        return self.classifierF(in_final), in_final
 
     def pred_value(self, input, true_scores, filter_masks, cur_ranks):
         # input [B,M,cell_dim+1], filter_masks: [B,M],cur_ranks[B,1]
@@ -272,24 +277,16 @@ class PPO_Policy(nn.Module):
 
         return scores, action, action_log_prob, filter_masks
 
-    def evaluate_actions(self,  obs_actor, filter_masks, actions):
-        # here the values should requires grad true
+    def evaluate_actions(self, obs_actor, filter_masks, actions):
         device = actions.device
-        B = obs_actor.size()[0]
-        M = filter_masks.size()[1]
-        #obs_actor_np = obs_actor.cpu().data.numpy()
-        drug_inds = torch.from_numpy(np.arange(M).reshape(1, M).repeat(B, axis=0).reshape(B, M, 1)).to(device)
-        cell_fts = torch.repeat_interleave(obs_actor.view(B, 1, -1), repeats=M, dim=1).float()
-        # np.repeat(obs_actor_np[:,np.newaxis,:],M,axis=1)
-        input = torch.cat((cell_fts, drug_inds.float()), axis=2)
+        B = obs_actor.size(0)
+        M = filter_masks.size(1)
 
-        scores, critic_input = self.actor(input)
+        drug_inds = torch.arange(M, device=device).unsqueeze(0).expand(B, -1)  # (B,M), no numpy
+        scores, critic_input = self.actor.forward_from_obs(obs_actor, drug_inds)
         scores = scores.squeeze()
-        #values = self.get_value(obs_critic, filter_masks)
         values = self.critic(critic_input)
-
         action_log_prob, dist_entropy = self.get_log_prob(scores, filter_masks, actions.squeeze(-1))
-
         return values, action_log_prob, dist_entropy
 
 
