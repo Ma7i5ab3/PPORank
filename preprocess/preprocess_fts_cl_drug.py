@@ -147,67 +147,31 @@ def Response_decompose(
     pred_mat = None
     old_ndcg = 0
     for epoch in range(iters):
-        old_WP = WP.copy()
-        old_WQ = WQ.copy()
-        old_mu = mu
-        old_b_p = b_p.copy()
-        old_b_q = b_q.copy()
-        # pred = (((mu + (Y * WQ * WP.T * X.T).T) + b_q).T + b_p).T # [N,M]
-        pred = np.matmul(np.matmul(np.matmul(X, WP), WQ.T), Y)+mu + b_q + b_p[:, np.newaxis]
+        # Y = I_M so: X @ WP @ WQ.T @ Y = X @ WP @ WQ.T
+        pred = X @ WP @ WQ.T + mu + b_q + b_p[:, np.newaxis]
 
-        err = np.nansum(np.multiply(R-pred, WE), axis=1)/n_K
-        b_p += lr*err
+        # bias updates (WE = 1 everywhere, so multiply is a no-op)
+        b_p += lr * np.nansum(R - pred, axis=1) / n_K
+        b_q += lr * np.nansum(R - pred, axis=0) / n_K
 
-        err = np.nansum(np.multiply(R - pred, WE), axis=0) / n_K
-        b_q += lr*err
+        # shared residual matrix, NaN positions zeroed for gradient steps
+        E = R - pred
+        E[np.isnan(E)] = 0
 
-        # Update WP
-        temp = np.zeros(WP.shape)  # [P,f]
+        # Update WP: was O(N*M*P) 3-D broadcast (~2.6 GB); now two matmuls
         if not fixed_WP:
-            q = np.matmul(Y, WQ)  # [M,M]*[M,f]->[M,f]
-            err_M = np.multiply(R - pred, WE)  # [N,M]
-            err_M[np.isnan(err_M)] = 0
-            # X: [N,P] , err_M :[N,M]
-            # [P,M]*[M,f]->[P,f]
-            temp = np.matmul((np.sum(np.multiply(X[:, np.newaxis, :], err_M[:, :, np.newaxis]), axis=0)).T, q)
-            temp = temp/n_K
-            WP += lr*temp
+            # q = Y @ WQ = WQ  (Y = I_M)
+            WP += lr * (X.T @ E @ WQ) / n_K   # (P,N)@(N,M)@(M,f) -> (P,f)
 
-        # Update WQ
-        temp = np.array(np.zeros(WQ.shape))  # [M,f]
-        p_u = np.matmul(X, WP)  # [N,P]*[P,f]->[N,f]
-        err_u = np.multiply(R - pred, WE)  # [N,M] multiply [N,M]->[N,M]
-        err_u[np.isnan(err_u)] = 0
-        err_u_T = err_u.T
-        # [M,N,1]*[M,1,M]->[M,N,M]->[N,M]
-        # ([f,N]*[N,M]).T->[M,f]
-        temp = (np.matmul(p_u.T, np.nansum(np.multiply(err_u_T[:, :, np.newaxis], Y[:, np.newaxis, :]), axis=0))).T
-        temp = temp / n_K
-        WQ += lr * temp
+        # Update WQ: was O(M*N*M) 3-D broadcast (~432 MB); Y=I so simplifies
+        p_u = X @ WP   # [N,f]  (uses updated WP, same as original)
+        WQ += lr * (p_u.T @ E).T / n_K   # (f,N)@(N,M) -> (f,M) -> .T -> (M,f)
 
         new_err = np.sqrt(np.nansum(np.square(R - pred)) / n_K)
-        new_ndcg = np.nanmean(Reward_utils.ndcg(R, pred, R.shape[1], full_rank=True))
-
-        err_list += [[epoch, new_err, new_ndcg]]
-        # diff_ndcg = new_ndcg-old_ndcg
-        # diff_err = new_err-current_err
-
-        if new_err < best_err:
-            current_err = new_err
-            best_ndcg = new_ndcg
-        else:
-            WP = old_WP
-            WQ = old_WQ
-            mu = mu
-            b_p = old_b_p
-            b_q = old_b_q
-
-            # save_ft_mats(ss_df, cl_features_df, X, WP, WQ, mu, b_p, b_q, err_list, epoch, out_name)
-            # if training:
-            #     pred_mat = predict_CaDRRes(ss_df, cl_features_df, Xtest, ss_df_test,
-            #                                X, WP, WQ, mu, b_p, b_q, err_list, epoch)
 
         if epoch % 100 == 0:
+            new_ndcg = np.nanmean(Reward_utils.ndcg(R, pred, R.shape[1], full_rank=True))
+            err_list += [[epoch, new_err, new_ndcg]]
             print("current epoch {} loss is {} and current ndcg is {}".format(epoch, new_err, new_ndcg))
 
             save_ft_mats(ss_df,  cl_features_df, X, WP, WQ, mu, b_p, b_q, err_list, epoch, out_name)

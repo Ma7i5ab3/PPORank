@@ -412,6 +412,10 @@ def Pretrained_MF_split():
         for i in range(nfolds):
             fold_start = time.time()
             out_dir_cv = os.path.join(out_dir, "Fold{}".format(i))
+            mf_weights = os.path.join(out_dir_cv, "{}Dim".format(f), "WPmatrix.csv")
+            if os.path.isfile(mf_weights):
+                print("MF pretraining Fold {}/{} — weights already exist, skipping".format(i, nfolds - 1))
+                continue
             print("MF pretraining Fold {}/{} ...".format(i, nfolds - 1))
             Xtrain_df = pd.read_csv(out_dir_cv+'/Xtrain_rawDf.csv', index_col=0)
             Ytrain_df = pd.read_csv(out_dir_cv+'/YtrainDf.csv', index_col=0)
