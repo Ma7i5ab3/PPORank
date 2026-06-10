@@ -5,6 +5,7 @@ import sys
 import os
 import pickle
 import random
+import time
 from scipy import stats
 import Reward_utils
 import torch
@@ -146,6 +147,8 @@ def Response_decompose(
     err_list = []
     pred_mat = None
     old_ndcg = 0
+    fold_start = time.time()
+    block_start = time.time()
     for epoch in range(iters):
         # Y = I_M so: X @ WP @ WQ.T @ Y = X @ WP @ WQ.T
         pred = X @ WP @ WQ.T + mu + b_q + b_p[:, np.newaxis]
@@ -172,7 +175,16 @@ def Response_decompose(
         if epoch % 100 == 0:
             new_ndcg = np.nanmean(Reward_utils.ndcg(R, pred, R.shape[1], full_rank=True))
             err_list += [[epoch, new_err, new_ndcg]]
-            print("current epoch {} loss is {} and current ndcg is {}".format(epoch, new_err, new_ndcg))
+            block_elapsed = time.time() - block_start
+            total_elapsed = time.time() - fold_start
+            remaining_blocks = (iters - epoch) / 100
+            eta = remaining_blocks * block_elapsed
+            ts = time.strftime("%Y-%m-%d %H:%M:%S")
+            print("[{}] epoch {:5d}/{} | loss={:.6f} | ndcg={:.4f} | "
+                  "block={:.1f}s | elapsed={:.0f}s | ETA={:.0f}s".format(
+                      ts, epoch, iters, new_err, new_ndcg,
+                      block_elapsed, total_elapsed, eta))
+            block_start = time.time()
 
             save_ft_mats(ss_df,  cl_features_df, X, WP, WQ, mu, b_p, b_q, err_list, epoch, out_name)
             if training:

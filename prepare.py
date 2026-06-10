@@ -414,9 +414,11 @@ def Pretrained_MF_split():
             out_dir_cv = os.path.join(out_dir, "Fold{}".format(i))
             mf_weights = os.path.join(out_dir_cv, "{}Dim".format(f), "WPmatrix.csv")
             if os.path.isfile(mf_weights):
-                print("MF pretraining Fold {}/{} — weights already exist, skipping".format(i, nfolds - 1))
+                print("[{}] MF pretraining Fold {}/{} — weights already exist, skipping".format(
+                    time.strftime("%Y-%m-%d %H:%M:%S"), i, nfolds - 1))
                 continue
-            print("MF pretraining Fold {}/{} ...".format(i, nfolds - 1))
+            print("[{}] MF pretraining Fold {}/{} starting ...".format(
+                time.strftime("%Y-%m-%d %H:%M:%S"), i, nfolds - 1))
             Xtrain_df = pd.read_csv(out_dir_cv+'/Xtrain_rawDf.csv', index_col=0)
             Ytrain_df = pd.read_csv(out_dir_cv+'/YtrainDf.csv', index_col=0)
             Ytest_df = pd.read_csv(out_dir_cv+'/YtestDf.csv', index_col=0)
@@ -429,13 +431,17 @@ def Pretrained_MF_split():
             Xtest_df = pd.DataFrame(xscaler.transform(Xtest_df), columns=Xtest_df.columns, index=Xtest_df.index)
             Ypred_mat = Response_decompose(Ytrain_df, Xtrain_df, Ytest_df, Xtest_df, iters,
                                            lr, f, out_dir_cv, i, training=True)
+            fold_elapsed = time.time() - fold_start
             if Ypred_mat is not None:
-                print('Fold {}: storing Ypred mat from CaDRRes  [{:.1f}s]'.format(i, time.time() - fold_start))
+                print('[{}] Fold {}: storing Ypred mat from CaDRRes  [{:.1f}s]'.format(
+                    time.strftime("%Y-%m-%d %H:%M:%S"), i, fold_elapsed))
                 result_fn = get_result_filename('CaDRRes', analysis, data_name, i, args.f)
                 np.savez(result_fn, Y_true=np.array(Ytest_df), Y_pred=Ypred_mat)
             else:
-                print('Fold {}: MF pretraining complete  [{:.1f}s]'.format(i, time.time() - fold_start))
-        print("All {} folds pretrained in {:.1f}s".format(nfolds, time.time() - mf_start))
+                print('[{}] Fold {}: MF pretraining complete  [{:.1f}s]'.format(
+                    time.strftime("%Y-%m-%d %H:%M:%S"), i, fold_elapsed))
+        print("[{}] All {} folds pretrained in {:.1f}s".format(
+            time.strftime("%Y-%m-%d %H:%M:%S"), nfolds, time.time() - mf_start))
 
     elif analysis == "KEEPK":
         for kr in keepk_ratios:
