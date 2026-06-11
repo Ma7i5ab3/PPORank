@@ -360,6 +360,82 @@ Note: CHR17 weighted mean across full chromosome 17 is always < 2 (chr17_pos = 0
 
 ---
 
+## Performance optimization & training robustness (2026-06-10 → 06-11)
+
+Commits `2dc0f71` → `9b2b857`. After the full data pipeline was working, the
+bottleneck became runtime: MF (CaDRRes) pretraining and PPO training were too
+slow to iterate on. This block speeds up both, adds a fast sanity-check
+pipeline, and makes PPO training stop early when it stops improving.
+
+### Quick pipeline (`0bcdb96`)
+
+New fast/dev variant that runs the whole pipeline end-to-end in minutes for
+sanity checks — **not for reported results**.
+
+- `run_pipeline_quick.sh` + `configs/configG_FULL_quick.yaml`
+- Writes all artifacts under a separate `data/GDSC_ALL_QUICK/` tree, so it never
+  touches the real `data/GDSC_ALL` folds, models, or results.
+- Reduced: `nfolds 5→2`, MF `iters 20000→1000`, PPO `epochs 1400→30`, training
+  cell-line fraction `prop 1.0→0.5`. Keeps `f=100` and `num_processes=32`.
+- Constraint documented in both files: keep `f ≥ 68` (deep_out_size 64 + 4),
+  otherwise the critic's `ConvValueNet` pooling breaks
+  `RolloutStorage.sample_concatenate`'s reshape.
+
+### MF pretraining speedup — `Response_decompose` (`d32f99b`, `2dc0f71`)
+
+`preprocess/preprocess_fts_cl_drug.py`:
+- Since `Y = I_M`, the prediction collapses `X @ WP @ WQ.T @ Y` → `X @ WP @ WQ.T`,
+  and the WP/WQ gradient updates become two matmuls each instead of the original
+  3-D broadcast (`WP` update was ~2.6 GB, `WQ` ~432 MB of temporaries — now gone).
+- `WE` is all-ones, so the `multiply(..., WE)` masks were dropped as no-ops.
+- Removed the per-epoch best-error rollback (saving/restoring `WP/WQ/mu/b_p/b_q`
+  every iteration); NDCG and checkpointing now computed only every 100 epochs.
+- Added timestamped progress logging with per-block time, elapsed, and ETA.
+
+`prepare.py` (`Pretrained_MF_split`):
+- New `--iters` CLI arg (default 20000) instead of the hardcoded default.
+- **Skip-if-done**: a fold whose `…/{f}Dim/WPmatrix.csv` already exists is
+  skipped, so an interrupted run resumes without redoing finished folds.
+- Timestamped per-fold logging.
+
+`preprocess/pp_gene_original.py`: vectorized the Pearson similarity matrix
+(z-score columns then `Zᵀ @ Z / n_genes`) instead of the nested per-sample-pair
+`stats.pearsonr` loop.
+
+### PPO forward-pass speedup (`c2c70c6`, `a14ea3e`, `4596e3d`)
+
+`models/Policy.py`:
+- `Deep_Cross_Policy.forward`: cell features are identical for all M drugs of a
+  cell, so `cell_emb` is now computed once and `expand`-ed over M instead of
+  building the full `(B,M,cell_dim)` tensor. Removed the `input.cpu()` / `.clone()`
+  round-trips and now respects the input's device.
+- New `forward_from_obs(obs_actor, drug_inds)`: a lean path for
+  `evaluate_actions` that skips reconstructing the `(B,M,P+1)` input tensor.
+- `PPO_Policy.evaluate_actions`: builds `drug_inds` with `torch.arange(...).expand`
+  on-device instead of round-tripping through numpy.
+
+`Agent/storage.py`:
+- Replaced Python-list path accumulation (`log_pi`, `dist_entropy`, `value_pred`)
+  with tensor slices / `expand`, and the downstream stacking with `torch.cat`.
+- **Vectorized GAE**: the reverse per-step Python loop is replaced by a
+  reverse-cumsum with discount factors, computed on CPU per cell to avoid
+  M individual CUDA sync points.
+
+### Training-loop fixes & robustness (`dff663d`, `d9c5f10`, `c9aed1e`, `9b2b857`)
+
+`main.py`:
+- `DataLoader(num_workers=4 → 0)` (workers were hurting, not helping here);
+  `pin_memory=True` kept.
+- `--resume` fixed: `torch.load(..., map_location=device)`, and load the merged
+  `actor_critic` via `checkpoint['Policy_state_dict']` (the old code referenced
+  non-existent `policy_state_dict`/`value_state_dict` keys).
+- Checkpoint-save guard bug fixed: `epoch == num_updates - 1` → `epoch == epochs - 1`.
+- **Early stopping**: new `--early_stopping_patience` arg (default 50, `0` =
+  disabled). Counter resets on each new best test NDCG; training breaks after
+  `patience` epochs without improvement.
+
+---
+
 ## Open issues / to verify
 
 | Issue | Priority | Notes |
