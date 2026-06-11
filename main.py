@@ -117,7 +117,7 @@ def main(Debug=False):
     else:
         tr_sampler = RandomSampler(train_dataset)
 
-    train_loader = DataLoader(train_dataset, sampler=tr_sampler, num_workers=0,
+    train_loader = DataLoader(train_dataset, sampler=tr_sampler, num_workers=0, pin_memory=True,
                               batch_size=args.num_processes, drop_last=True)
     test_loader = DataLoader(test_dataset, batch_size=args.num_processes, drop_last=True)
 
