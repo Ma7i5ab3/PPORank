@@ -70,7 +70,6 @@ def main(Debug=False):
     dtype = torch.FloatTensor
     # dtype = torch.DoubleTensor
 
-    early_stopping_iter = 100000
     early_stopping_counter = 0
 
     data_dir = utils.create_train_data_dir(data_dir, args)
@@ -268,6 +267,15 @@ def main(Debug=False):
 
             is_best = ndcg_test > best_ndcg
             best_ndcg = max(ndcg_test, best_ndcg)
+
+            if is_best:
+                early_stopping_counter = 0
+            else:
+                early_stopping_counter += 1
+            if args.early_stopping_patience > 0 and early_stopping_counter >= args.early_stopping_patience:
+                logger.info("Early stopping at epoch {} — no improvement for {} epochs (best_ndcg={:.4f})".format(
+                    epoch, args.early_stopping_patience, best_ndcg))
+                break
 
             if is_best and not args.Debug:
                 # print("epoch {} best_rewards for {} test data is train {} and test {}, and the current best test ndcg is {}".format(

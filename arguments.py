@@ -360,6 +360,11 @@ def get_args():
         type=float,
         default=0.0,
         help='noise mean if using noise data')
+    parser.add_argument(
+        '--early_stopping_patience',
+        type=int,
+        default=50,
+        help='stop if test_ndcg does not improve for this many epochs (0 = disabled)')
 
     parser.add_argument(
         '--shared_params',
