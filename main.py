@@ -171,11 +171,10 @@ def main(Debug=False):
         epochs = args.epochs
 
         if args.resume:
-            checkpoint = torch.load(args.resume)
+            checkpoint = torch.load(args.resume, map_location=device)
             best_ndcg = checkpoint['best_ndcg']
-            print("previous bset ndcg is {}".format(best_ndcg))
-            agent.policy_net.load_state_dict(checkpoint['policy_state_dict'])
-            agent.value_net.load_state_dict(checkpoint['value_state_dict'])
+            print("previous best ndcg is {}".format(best_ndcg))
+            agent.actor_critic.load_state_dict(checkpoint['Policy_state_dict'])
             agent.optimizer.load_state_dict(checkpoint['optimizer'])
 
         logger.info("=== Training started: {} epochs, {} processes, device={} ===".format(
@@ -281,7 +280,7 @@ def main(Debug=False):
                                                     debug=args.Debug, keepk=args.keepk, ratio=args.keepk_ratio,
                                                     scenario=args.scenario)
                     np.savez(result_fn, Y_true=Ytest, Y_pred=Y_pred)
-            if (epoch % args.save_interval == 0 or epoch == num_updates - 1) and args.saved_dir != "":
+            if (epoch % args.save_interval == 0 or epoch == epochs - 1) and args.saved_dir != "":
                 utils.save_checkpoint({
                     'epoch': epoch,
                     'Policy_state_dict': agent.actor_critic.state_dict(),
