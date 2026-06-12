@@ -436,6 +436,61 @@ sanity checks — **not for reported results**.
 
 ---
 
+## Results aggregation fixed + first GDSC PPO run (2026-06-12)
+
+First full GDSC run on the H100 server completed all 5 PPO folds (early stopping
+hit each fold), but **STEP 4 (aggregation) crashed**:
+`FileNotFoundError: ./configs/configS_base.yaml`.
+
+### Bugs fixed in `results.py`
+
+- `__main__` ignored its CLI args and called
+  `save_exp_baselines_results("./configs/configS_base.yaml")` (a leftover
+  SimuData path that doesn't exist), while `run_pipeline.sh` was passing
+  `--config`. Wired `__main__` to the existing `parse_args()` →
+  `save_exp_baselines_results(args.config, single_k=args.k)`.
+- Dataset-kind detection used `data_name.startswith("GDSC")` / `== "CCLE"` /
+  `== "SimuData"`, which fails for a path-style id like `data/GDSC_ALL` (what
+  training actually used). Now derives `data_kind = os.path.basename(data_name)`
+  and branches on that, keeping the full `data_name` for result paths.
+- `N`/`P`/`M` read via `config.get(...)` instead of hard indexing (they only
+  feed the `data_form` string, which is unused for FULL analysis).
+
+### New aggregation config + pipeline wiring
+
+- `configs/configG_FULL_ppo.yaml` (new): aggregation config targeting the
+  trained PPO output — `methods: ['ppo']`, `data: data/GDSC_ALL`, `f: 100`
+  (matching `--Data`/`--f` used in STEP 3). The baseline `configG_FULL.yaml`
+  is left untouched. Result path resolves to
+  `results/data/GDSC_ALL/FULL/100Dim/ppo/ppo_{fold}.npz`.
+- `run_pipeline.sh` STEP 4 now points at `configG_FULL_ppo.yaml`.
+
+### First GDSC PPORank results (5-fold CV, FULL, f=100, essential genes)
+
+Re-ran `run_pipeline.sh` — STEP 1–3 all skipped (artifacts present), STEP 4 ran
+in 2s and wrote `results_ppo.txt`.
+
+| Metric | Mean (5 folds) | Per-fold |
+|--------|---------------|----------|
+| NDCG@1 | 0.356 | 0.335 / 0.350 / 0.357 / 0.323 / 0.413 |
+| NDCG@5 | 0.367 | 0.363 / 0.351 / 0.371 / 0.367 / 0.385 |
+| NDCG@10 | 0.391 | 0.394 / 0.380 / 0.401 / 0.387 / 0.392 |
+| NDCG@265 (full) | 0.717 | 0.721 / 0.708 / 0.715 / 0.716 / 0.724 |
+| Precision@1 | 0.149 | — |
+| Precision@5 | 0.190 | — |
+| Precision@10 | 0.196 | — |
+
+Sanity check: NDCG@265 matches the per-fold `best_ndcg` from the training logs
+(0.7208 / 0.7076 / 0.7139 / 0.7146 / 0.7238), confirming aggregation reads the
+correct `.npz`. `Precision@265 = 1.0` is trivial (k = total drug count).
+
+**Note**: the per-fold `.npz` is overwritten on each new best epoch, so it holds
+the **best-epoch** test predictions — consistent with early stopping. Baseline
+methods (EN/KRR/KRL/CaDRRes) for the Experiment 1 comparison are **not yet run**;
+this is PPO only.
+
+---
+
 ## Open issues / to verify
 
 | Issue | Priority | Notes |
