@@ -1,0 +1,41 @@
+[2026-06-12 06:15:18] ======================================================
+[2026-06-12 06:15:18] PPORank pipeline — Fri Jun 12 06:15:18 AM UTC 2026
+[2026-06-12 06:15:18] Python  : python
+[2026-06-12 06:15:18] Data    : data/GDSC_ALL
+[2026-06-12 06:15:18] Folds   : 5
+[2026-06-12 06:15:18] CUDA ID : 0
+[2026-06-12 06:15:18] Log     : pipeline_20260612_061518.log
+[2026-06-12 06:15:18] ======================================================
+[2026-06-12 06:15:18] 
+[2026-06-12 06:15:18] >>> STEP 1: Preprocessing raw GDSC files
+[2026-06-12 06:15:18]     GDSC_GEX.npz already exists — skipping Step 1
+[2026-06-12 06:15:18] 
+[2026-06-12 06:15:18] >>> STEP 2: CV split + kernel features + MF layer pretraining
+[2026-06-12 06:15:18]     CV folds already exist — checking MF pretraining...
+[2026-06-12 06:15:18]     MF pretrained weights already exist — skipping Step 2
+[2026-06-12 06:15:18] 
+[2026-06-12 06:15:18] >>> STEP 3: Training PPORank (5 folds)
+[2026-06-12 06:15:18] 
+[2026-06-12 06:15:18]   --- Fold0 ---
+[2026-06-12 06:15:18]     Result already exists (results/data/GDSC_ALL/FULL/100Dim/ppo/ppo_0.npz) — skipping Fold0
+[2026-06-12 06:15:18] 
+[2026-06-12 06:15:18]   --- Fold1 ---
+[2026-06-12 06:15:18]     Result already exists (results/data/GDSC_ALL/FULL/100Dim/ppo/ppo_1.npz) — skipping Fold1
+[2026-06-12 06:15:18] 
+[2026-06-12 06:15:18]   --- Fold2 ---
+[2026-06-12 06:15:18]     Result already exists (results/data/GDSC_ALL/FULL/100Dim/ppo/ppo_2.npz) — skipping Fold2
+[2026-06-12 06:15:18] 
+[2026-06-12 06:15:18]   --- Fold3 ---
+[2026-06-12 06:15:18]     Result already exists (results/data/GDSC_ALL/FULL/100Dim/ppo/ppo_3.npz) — skipping Fold3
+[2026-06-12 06:15:18] 
+[2026-06-12 06:15:18]   --- Fold4 ---
+[2026-06-12 06:15:18]     Result already exists (results/data/GDSC_ALL/FULL/100Dim/ppo/ppo_4.npz) — skipping Fold4
+[2026-06-12 06:15:18] 
+[2026-06-12 06:15:18] >>> STEP 4: Aggregating results
+[2026-06-12 06:15:20]     Results written to results_ppo.txt  [2s]
+[2026-06-12 06:15:20] 
+[2026-06-12 06:15:20] ======================================================
+[2026-06-12 06:15:20] Pipeline complete — total elapsed: 2s
+[2026-06-12 06:15:20] Results : results_ppo.txt
+[2026-06-12 06:15:20] Logs    : pipeline_20260612_061518.log
+[2026-06-12 06:15:20] ======================================================
