@@ -34,8 +34,10 @@ Hyperparameters are selected per fold by an internal validation split scored wit
 full-rank NDCG (the paper's evaluation metric), over the grids below.
 """
 import argparse
+import logging
 import os
 import time
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -46,6 +48,29 @@ from sklearn.preprocessing import StandardScaler
 
 from results import get_result_filename
 from Reward_utils import NDCGk
+
+logger = logging.getLogger("baselines")
+
+
+def setup_logger(log_dir="logs"):
+    os.makedirs(log_dir, exist_ok=True)
+    log_path = os.path.join(
+        log_dir, "baselines_{}.log".format(datetime.now().strftime("%Y%m%d_%H%M%S")))
+    logger.setLevel(logging.INFO)
+    logger.handlers.clear()
+    fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S")
+    fh = logging.FileHandler(log_path)
+    fh.setFormatter(fmt)
+    sh = logging.StreamHandler()
+    sh.setFormatter(fmt)
+    logger.addHandler(fh)
+    logger.addHandler(sh)
+    # route warnings (e.g. sklearn ConvergenceWarning) into the same log
+    logging.captureWarnings(True)
+    warn_logger = logging.getLogger("py.warnings")
+    warn_logger.addHandler(fh)
+    logger.info("Logging to %s", log_path)
+    return log_path
 
 # Default tuning grids (override via --config grids or CLI). Kept small but
 # sensible; the config's en_alphas/en_l1ratios are used if present.
@@ -148,8 +173,11 @@ def tune_krr(Ktr, Ytr, val_frac, seed, min_samples, alphas):
 
 def main():
     args = parse_args()
+    setup_logger()
     with open(args.config) as f:
         config = yaml.full_load(f)
+    logger.info("config=%s | methods=%s | val_frac=%s | seed=%s",
+                args.config, args.methods, args.val_frac, args.seed)
 
     analysis = config["analysis"]
     assert analysis == "FULL", "baselines.py only handles the FULL analysis"
@@ -166,11 +194,11 @@ def main():
     fold_root = os.path.join(os.getcwd(), data_name, "CV", "FULL")
 
     for method in args.methods:
-        print("\n=== {} ({} folds, f={}) ===".format(method, nfolds, f))
+        logger.info("=== %s (%d folds, f=%s) ===", method, nfolds, f)
         for i in range(nfolds):
             out = get_result_filename(method, "FULL", data_name, i, f)
             if os.path.exists(out) and not args.overwrite:
-                print("  Fold {}: {} exists, skipping".format(i, out))
+                logger.info("Fold %d: %s exists, skipping", i, out)
                 continue
             fold_dir = os.path.join(fold_root, "Fold{}".format(i))
             t0 = time.time()
@@ -194,8 +222,8 @@ def main():
 
             np.savez(out, Y_true=Yte, Y_pred=Ypred)
             test_ndcg = np.nanmean(NDCGk(Yte, Ypred, Yte.shape[1]))
-            print("  Fold {}: {} | full-rank test NDCG={:.4f} | {:.1f}s -> {}".format(
-                i, params, test_ndcg, time.time() - t0, out))
+            logger.info("Fold %d: %s | full-rank test NDCG=%.4f | %.1fs -> %s",
+                        i, params, test_ndcg, time.time() - t0, out)
 
 
 if __name__ == "__main__":
