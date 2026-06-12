@@ -143,6 +143,23 @@ def Split_Data():
         Y = pd.DataFrame(ss_arr, index=cell_ids, columns=drug_lists)
         X = pd.DataFrame(cl_feature_arr, index=cell_ids, columns=gene_symbols)  # 【962，17737】
 
+        # Toxic-drug filtering: the paper reports 223 GDSC drugs (after removing
+        # toxic drugs), but the .npz holds all 265. The released code applies this
+        # via CaDRReS' median-sensitivity list ({Source}_drugMedianGE0.txt), which
+        # the Data_All=False branch reads (lines below). Replicate it here so the
+        # Data_All=True path also yields the paper's drug set.
+        drug_list_fname = os.path.join(directory, "{}".format(args.Source) + args.drug_list_fname)
+        if os.path.exists(drug_list_fname):
+            selected_drugs = set(pd.read_csv(drug_list_fname, header=None)[0].values.astype(str))
+            keep = [d for d in Y.columns if str(d) in selected_drugs]
+            logger.info("Drug filter ({}): {} -> {} drugs".format(
+                os.path.basename(drug_list_fname), Y.shape[1], len(keep)))
+            Y = Y[keep]
+            drug_lists = np.array(keep)
+        else:
+            logger.warning("Drug list {} not found: keeping all {} drugs (no toxic filter)".format(
+                drug_list_fname, Y.shape[1]))
+
         # ess_genes_list = pp_gene_original.get_gene_list(os.path.join(
         #     os.getcwd(),
         #     args.data_dir, args.gene_list_fn))  # 1856 essential gens
