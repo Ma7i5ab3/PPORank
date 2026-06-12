@@ -37,14 +37,21 @@ import argparse
 import logging
 import os
 import time
+import warnings
 from datetime import datetime
 
 import numpy as np
 import pandas as pd
 import yaml
+from sklearn.exceptions import ConvergenceWarning
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.linear_model import ElasticNet
 from sklearn.preprocessing import StandardScaler
+
+# ElasticNet at small alpha on standardised high-dim features rarely hits the
+# coordinate-descent tolerance; the predictions are still valid, so silence the
+# (very noisy) per-fit ConvergenceWarning instead of flooding the log.
+warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 from results import get_result_filename
 from Reward_utils import NDCGk
