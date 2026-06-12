@@ -153,20 +153,23 @@ def save_exp_baselines_results(config_file, single_k=None):
     num_folds = config['nfolds']
     seed = config['seed']
     analysis = config['analysis']
-    if data_name.startswith("GDSC"):
+    # data_name may be a path-style id (e.g. "data/GDSC_ALL"); detect the
+    # dataset kind from its basename so the GDSC/CCLE/SimuData branches still match.
+    data_kind = os.path.basename(data_name)
+    if data_kind.startswith("GDSC"):
         keepk_ratios = np.array(config['keepk_ratios_G'], dtype=float)
         scenarios = [""]
-    elif data_name == "CCLE":
+    elif data_kind == "CCLE":
         keepk_ratios = np.array(config['keepk_ratios_C'], dtype=float)
         scenarios = [""]
-    elif data_name == "SimuData":
+    elif data_kind == "SimuData":
         keepk_ratios = [1.0]
         scenarios = config['scenarios']
     keepk = config['keepk']
     f = config['f']
-    N = config['N']
-    P = config['P']
-    M = config['M']
+    N = config.get('N')
+    P = config.get('P')
+    M = config.get('M')
 
     rank_ks = np.array(config['rank_ks'], dtype=int)
 
@@ -183,11 +186,11 @@ def save_exp_baselines_results(config_file, single_k=None):
 
     ratio_range = keepk_ratios if analysis == 'KEEPK' else np.array([1.0])
     foldwise = not (analysis == "KEEPK")
-    if data_name.startswith("GDSC"):
+    if data_kind.startswith("GDSC"):
         max_k = k_max[0]
-    elif data_name == 'CCLE':
+    elif data_kind == 'CCLE':
         max_k = k_max[1]
-    elif data_name == 'SimuData':
+    elif data_kind == 'SimuData':
         max_k = k_max[0]
     all_methods_results = {}
 
@@ -296,5 +299,6 @@ def make_long_dictionary(results, methods=None, k_range=None, r_range=None, r_tr
 
 
 if __name__ == "__main__":
-    all_methods_results = save_exp_baselines_results("./configs/configS_base.yaml")
+    args = parse_args()
+    all_methods_results = save_exp_baselines_results(args.config, single_k=args.k)
     # long_data = make_long_dictionary(all_methods_results,  r_range=[1.0])

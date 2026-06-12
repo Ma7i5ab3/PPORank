@@ -1,0 +1,52 @@
+# Aggregation config for the PPORank (ppo) results produced by run_pipeline.sh.
+# Mirrors configG_FULL.yaml but targets the ppo method, projection dim 100, and the
+# "data/GDSC_ALL" result tree written during training
+# (results/data/GDSC_ALL/FULL/100Dim/ppo/ppo_{fold}.npz).
+analysis: FULL
+methods: ['ppo']
+nfolds: 5
+# must match --Data used for training so the result path resolves
+data: data/GDSC_ALL
+tunning: False
+
+Data_All: True
+seed: 1234
+
+# must match the projection dimension (F) used for training
+f: 100
+
+# dataset dimensions (cosmetic for FULL analysis — not part of the result path)
+N: 769
+P: 1610
+M: 265
+
+# hyper-parameter grids (read unconditionally by results.py even for ppo-only runs)
+krl_lambdas: [0.001,0.01,0.1]
+krl_gammas: [0.001,0.01,0.1]
+kbmtl_alphas: [0.001]
+kbmtl_betas: [0.001]
+kbmtl_gammas: [0.001]
+krr_alphas: [0.001]
+krr_gammas: [0.001]
+rf_nestimators: [100]
+en_alphas: [0.001,0.01,0.1,1,10]
+en_l1ratios: [0.1,0.3,0.5,0.7,0.9]
+krl_k: 10
+
+# evaluation parameter k in NDCG@k and Precision@k
+rank_ks: [1,5,10]
+
+keepk: 5
+rank_all: True
+keepk_ratios_G: [1.0, 0.5, 0.1]
+keepk_ratios_C: [1.0, 0.6, 0.3]
+keepk_ratios: [1.0, 0.5, 0.1]
+
+### max num of drugs for NDCG full
+k_max: [265,26]
+single_k: 265
+
+# evaluation metrics
+cv_metric: ['NDCG',"precision"]
+
+Debug: False

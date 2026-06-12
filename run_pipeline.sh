@@ -107,7 +107,7 @@ log ""
 log ">>> STEP 4: Aggregating results"
 STEP_START=$(date +%s)
 
-"$PYTHON" results.py --config ./configs/configG_FULL.yaml 2>&1 | tee results_ppo.txt
+"$PYTHON" results.py --config ./configs/configG_FULL_ppo.yaml 2>&1 | tee results_ppo.txt
 log "    Results written to results_ppo.txt  [$(elapsed $STEP_START)s]"
 
 # ── Done ─────────────────────────────────────────────────────────────────────
