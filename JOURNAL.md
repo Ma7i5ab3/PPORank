@@ -491,13 +491,70 @@ this is PPO only.
 
 ---
 
+## Toxic-drug filter — 223 vs 265 GDSC drugs (2026-06-12)
+
+The first GDSC run trained on **265** drugs, but the paper reports **223** (after
+removing toxic drugs). Investigated where the filter should happen and why it was
+skipped.
+
+### Root cause — text vs released code
+
+- The paper (Section 3.1.1) describes the filter as a *heuristic outlier detection*
+  (Iorio et al. 2016, ref 59) on drug-specific sensitivity thresholds, **plus**
+  exclusion of drugs without a PubChem ID (and 15 duplicate-PubChem drugs) → 223.
+- The **released code** does *not* implement that. The 265→223 reduction lives only
+  in `prepare.py`'s `Data_All=False` branch (lines 194–197), which reads CaDRReS'
+  drug list `{Source}_drugMedianGE0.txt` (drugs with median sensitivity ≥ 0).
+  Author's own comment at line 196: `# 265 drugs, after delete from median 1um, has 223 drugs`.
+- Our config (`configG_FULL.yaml`) sets `Data_All: True`, whose branch loads
+  `GDSC_GEX.npz` directly and takes all 265 `drug_ids` with **no drug filter** → 265.
+- `preprocess/toxic_data.py` (the would-be Iorio-style filter) is **incomplete and
+  unrunnable**: it reads a missing `data/GDSC_ALL/toxic_drug_ids.csv`, has a
+  hardcoded author path (`/home/liux3941/RL/RL_GDSC/GDSC_ALL/gdsc_drugMedianGE0.txt`),
+  and writes no output (truncated).
+
+### Decision — use CaDRReS' list (reproduce the code, not re-derive)
+
+For a faithful reproduction we replicate what the authors' pipeline actually does
+(median-GE0 list), rather than re-implementing Iorio's heuristic (which would risk a
+*different* 223 set and add a confound). **Caveat to report**: the criterion
+described in the paper (Iorio + PubChem) and the one implemented (CaDRReS median-GE0)
+both yield 223 but are not formally verified to be the identical drug set.
+
+### Actions taken
+
+- Recovered `gdsc_drugMedianGE0.txt` from CaDRReS GitHub
+  (`CSB5/CaDRReS/misc/gdsc_drugMedianGE0.txt`, 223 drug IDs) → saved as
+  `data/GDSC_ALL/GDSC_drugMedianGE0.txt`. Verified 223/223 IDs intersect the
+  `.npz` `drug_ids` (zero missing).
+- `prepare.py` (`Data_All=True` branch, after `Y`/`X` construction): added a guarded
+  filter that reads `{Source}_drugMedianGE0.txt`, restricts `Y` to the selected
+  drugs, and logs `Drug filter (...): 265 -> 223 drugs`. Falls back to a warning +
+  all drugs if the list is absent (safe for CCLE/Simu).
+- Re-ran the pipeline on 223 drugs. Step 2 log confirms `265 -> 223 drugs` and the
+  1610 essential-gene intersection; folds rebuilt (train ~769 / test ~193).
+
+**Note**: `data/` is gitignored, so `GDSC_drugMedianGE0.txt` does **not** sync via
+git — it must be copied to each machine manually (or re-`curl`-ed from CaDRReS).
+
+### Incident — truncated `GDSC_GEX.npz` on the server
+
+While re-running, `np.load` crashed with `BadZipFile: File is not a zip file`. The
+server's `GDSC_GEX.npz` was **truncated to 20 MB** (vs 140 MB; valid ZIP header,
+correct `X` shape `(962, 17737)`, but cut off → missing central directory). Caused
+by an interrupted write/transfer the day before (dated Jun 11 15:02), **not** by the
+code or git (the file is gitignored and untracked). Fixed by re-`scp`-ing the valid
+copy from the Mac and verifying `md5sum = fce179909a9b518a385e16ee619ebd4d`.
+
+---
+
 ## Open issues / to verify
 
 | Issue | Priority | Notes |
 |-------|----------|-------|
 | **MET modality** | Low | Cannot reproduce GEX+MET experiment (Figure 5 incomplete) — GDSC MET permanently lost |
 | **`prepare.py` not yet run** | High | Must run before any training; no fold splits found in `data/GDSC_ALL/CV/` |
-| **Toxic drug filtering** | High | Paper uses 223 GDSC drugs / 19 CCLE drugs; `.npz` files have 265 / 24; verify that `preprocess/toxic_data.py` is called correctly and produces the right filtered dataset |
+| **Toxic drug filtering** | ✅ resolved (GDSC) | GDSC filtered 265→223 via CaDRReS `GDSC_drugMedianGE0.txt` + new filter in `prepare.py` (see section above). CCLE (24→19) still to apply when CCLE config is created. Criterion differs from paper's Iorio+PubChem description — documented caveat |
 | **GDSC vs GDSC_ALL** | Medium | `config.yaml` uses `data: GDSC`; `configG_FULL.yaml` uses `data: GDSC_ALL`; check if they refer to the same preprocessed data or to two different subsets |
 | **CCLE config** | Medium | No `configC.yaml` exists; need to create it with correct dataset path, methods, and hyperparameters |
 | **SimuData config** | Medium | No config for simulation experiments; need to create it |
