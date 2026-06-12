@@ -1,0 +1,51 @@
+# Aggregation config for the Claim-1 comparison table (GDSC, FULL).
+# Compares PPORank against the baselines on the SAME 5 folds / drug set:
+#   ppo      -> results/data/GDSC_ALL/FULL/100Dim/ppo/ppo_{fold}.npz       (main.py)
+#   CaDRRes  -> results/data/GDSC_ALL/FULL/100Dim/CaDRRes/CaDRRes_{fold}.npz (prepare.py --decompose)
+#   EN, KRR  -> results/data/GDSC_ALL/FULL/100Dim/{EN,KRR}/..._{fold}.npz   (baselines.py)
+#
+# CaDRRes is produced by the MF pretraining; EN/KRR by baselines.py. All four
+# must share the SAME `data` and `f` so the result paths line up — verify the
+# CaDRRes .npz actually lives under 100Dim before aggregating.
+analysis: FULL
+methods: ['ppo', 'CaDRRes', 'EN', 'KRR']
+nfolds: 5
+data: data/GDSC_ALL
+tunning: False
+
+Data_All: True
+seed: 1234
+
+f: 100
+
+N: 769
+P: 1610
+M: 265
+
+# hyper-parameter grids (read unconditionally by results.py; KRL excluded from methods)
+krl_lambdas: [0.001,0.01,0.1]
+krl_gammas: [0.001,0.01,0.1]
+kbmtl_alphas: [0.001]
+kbmtl_betas: [0.001]
+kbmtl_gammas: [0.001]
+krr_alphas: [0.01,0.1,1,10,100]
+krr_gammas: [0.001]
+rf_nestimators: [100]
+en_alphas: [0.001,0.01,0.1,1,10]
+en_l1ratios: [0.1,0.3,0.5,0.7,0.9]
+krl_k: 10
+
+rank_ks: [1,5,10]
+
+keepk: 5
+rank_all: True
+keepk_ratios_G: [1.0, 0.5, 0.1]
+keepk_ratios_C: [1.0, 0.6, 0.3]
+keepk_ratios: [1.0, 0.5, 0.1]
+
+k_max: [265,26]
+single_k: 265
+
+cv_metric: ['NDCG',"precision"]
+
+Debug: False
