@@ -18,6 +18,10 @@ if [ -f "$SCRIPT_DIR/venv/bin/python" ]; then
     PYTHON="$SCRIPT_DIR/venv/bin/python"
 fi
 
+# Match run_pipeline.sh: expandable-segments allocator avoids the caching allocator's
+# severe over-reservation (~78GB reserved vs ~1.6GB used). Override via env if needed.
+export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
+
 SRC_DATA_DIR="data/GDSC_ALL"
 DATA_DIR="data/GDSC_ALL_QUICK"
 # NOTE: keep F >= deep_out_size+4 (now 32+4=36) — smaller values trigger a shape

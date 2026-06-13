@@ -11,6 +11,11 @@ if [ -f "$SCRIPT_DIR/venv/bin/python" ]; then
     PYTHON="$SCRIPT_DIR/venv/bin/python"
 fi
 
+# Default to PyTorch's expandable-segments allocator: without it the caching allocator
+# over-reserves badly (observed ~78GB reserved vs ~1.6GB actually used = pure fragmentation).
+# With it, reserved ≈ allocated. Override by exporting PYTORCH_CUDA_ALLOC_CONF before running.
+export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
+
 DATA_DIR="data/GDSC_ALL"
 NUM_PROCESSES=16
 F=100               # projection dimension

@@ -834,6 +834,33 @@ earlier "f≥68 / sample_concatenate reshape" note was imprecise — `sample_con
 
 ---
 
+## GPU memory blow-up (~78GB) — diagnosed as allocator fragmentation (2026-06-13)
+
+After the feature+hyperparameter fixes, the PPO run showed **~78 GB GPU reserved** (nvitop)
+vs **<10 GB** on the old code — alarming on the shared single-GPU server. Static code reading
+said the opposite should happen (kernel P=769 < genes 1610; smaller deep/cross nets), so the
+78 GB couldn't be genuine need.
+
+**Diagnosis (instrumented, not guessed):** added per-epoch `mem_alloc` (max_memory_allocated,
+true need) vs `mem_resv` (max_memory_reserved, = what nvitop shows) to `main.py`. Re-ran with
+`PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`. Epoch 0 logged **`mem_alloc=1.6G
+mem_resv=2.6G`** → the real need is ~1.6 GB; the 78 GB was the PyTorch caching allocator
+**over-reserving due to fragmentation** (the new tensor-size pattern from kernel features +
+new arch + drop_last mini-batches fragmented worse than the old config). Not a leak, not a bug.
+
+**Fix:** `expandable_segments:True` makes reserved ≈ allocated (78 GB → 2.6 GB). Baked in as
+the default `PYTORCH_CUDA_ALLOC_CONF` in `run_pipeline.sh` + `_quick.sh` (overridable).
+
+**Also added (shared-GPU safety):** `--gpu_mem_fraction` (arguments.py/main.py) hard-caps this
+process's GPU memory as a fraction of total; if exceeded, ONLY this process OOMs — never a
+co-tenant's job. Wire via `GPU_MEM_FRACTION=0.5` env in `run_pipeline.sh`. Used as a safety
+belt while a colleague was on the GPU (14 GB); with the allocator fix it's not even approached.
+
+Note: epoch time rose (~90s → ~226s) while sharing the GPU with another job — compute
+contention, not the fix; reverts when the GPU is free. Early stopping still ends folds early.
+
+---
+
 ## Open issues / to verify
 
 | Issue | Priority | Notes |
