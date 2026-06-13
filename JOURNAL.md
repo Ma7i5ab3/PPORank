@@ -1025,16 +1025,51 @@ Per-fold full-rank `best_ndcg`: 0.7142 / 0.7227 / 0.7034 / 0.7247 / 0.7209 → m
   dim 10 (forced by the `f ≥ deep_out_size+4` critic constraint), unspecified reward/advantage
   scaling details, and the missing KRL/SRMF columns in the final Exp-1 table.
 
-### 4-method comparison table — re-aggregation pending (must run on the server)
+### 5-method comparison table — re-aggregated on the server (2026-06-13)
 
-The per-fold `.npz` (ppo/CaDRRes/EN/KRR/KRL) live on the H100 server, not locally, so `results.py`
-must be re-run there to refresh CaDRReS (now on the kernel warm-start) alongside EN/KRR/KRL:
+Ran `python results.py --config configs/configG_FULL_compare.yaml`. CaDRReS `.npz` had to be
+regenerated first: `prepare.py`'s skip-if-done guard (WPmatrix.csv exists) skips the fold and never
+re-writes the CaDRReS prediction npz, so we deleted the 5 `WPmatrix.csv` and re-ran
+`prepare.py --decompose` (deterministic `RandomState(0)` ⇒ identical WP, ~847s for 5 folds). Two
+gotchas: (1) `configG_FULL.yaml` has `data: GDSC_ALL` (no `data/` prefix) so the npz first landed in
+`results/GDSC_ALL/...` and had to be moved to `results/data/GDSC_ALL/...`; (2) a scalar bug in
+`results.py` KRL hyperparameter selection (`metric10i[i,j] = ndcg(...)` assigns a per-cell-line array)
+— fixed by wrapping in `np.nanmean(...)`.
 
-```bash
-python results.py --config configs/configG_FULL_compare.yaml   # no --k → full table
-```
+GDSC FULL, 5-fold CV, f=100, 223 drugs, Pearson kernel features, paper-faithful PPO:
 
-Table to be filled in once the server output is available (replaces the 2026-06-13 4-method table above).
+| Method | NDCG@1 | NDCG@5 | NDCG@10 | NDCG@full | Prec@1 | Prec@5 | Prec@10 |
+|--------|----:|----:|----:|----:|----:|----:|----:|
+| **EN** | **0.441** | **0.502** | **0.529** | **0.780** | **0.212** | **0.299** | **0.317** |
+| KRL | 0.364 | 0.428 | 0.462 | 0.747 | 0.159 | 0.243 | 0.275 |
+| PPORank | 0.363 | 0.383 | 0.410 | 0.718 | 0.150 | 0.204 | 0.208 |
+| CaDRReS | 0.364 | 0.379 | 0.402 | 0.715 | 0.157 | 0.186 | 0.197 |
+| KRR | 0.218 | 0.239 | 0.267 | 0.649 | 0.068 | 0.096 | 0.126 |
+
+(full-rank label is `rank_223`; NDCG@223 == NDCG@265 numerically. KRL best λ,γ selected per fold by
+NDCG@k on the grid {0.001,0.01,0.1}².)
+
+### Revised diagnosis — PPORank is 4th of 5 on GDSC; CaDRReS catches up, KRL is 2nd
+
+The kernel warm-start lifted **CaDRReS from 0.668 → 0.715** full-rank (the earlier 0.668 was MF on the
+*raw genes*, the bug). Full 5-method picture (all paper-faithful):
+
+- **EN (0.780) dominates** at every k, by ~0.06 full-rank and ~0.08 at NDCG@1.
+- **KRL (0.747) is 2nd** and beats PPORank at *every* k (NDCG@5 0.428 vs 0.383, @10 0.462 vs 0.410) —
+  the listwise-NDCG BMRM learner on raw 17 737 genes is strong on dense GDSC, contrary to our earlier
+  caveat that BMRM might struggle on dense data.
+- **PPORank (0.718) ≈ CaDRReS (0.715)** — the RL phase adds essentially **nothing** over its (now
+  strong) CaDRReS warm-start (+0.003 full-rank; CaDRReS even edges PPO at NDCG@1, 0.364 vs 0.363). The
+  earlier "+0.041 PPO over CaDRReS" was an artifact of the broken raw-gene warm-start.
+- Final ordering (GDSC, ours): **EN > KRL > PPORank ≈ CaDRReS > KRR.**
+  Paper ordering: **PPORank > CaDRReS > rest.** → **Claim 1 NOT reproduced on GDSC**: PPORank is
+  **4th of 5**, beaten by both EN and KRL and not meaningfully above its own CaDRReS warm-start.
+
+This is the cleanest statement of the negative result: with feature representation and §3.1.3
+hyperparameters all fixed, PPORank = CaDRReS = ~0.716, ~0.03 below KRL and ~0.06 below a plain per-drug
+Elastic Net. The RL contribution over the MF warm-start is ~0. Remaining unreconciled gaps with the
+paper: `f=100` vs CaDRReS latent dim 10 (forced by the critic constraint) and any unspecified
+reward/advantage details — but they cannot explain a top-method-in-paper landing 4th here.
 
 ---
 

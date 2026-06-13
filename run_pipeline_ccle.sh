@@ -120,7 +120,7 @@ log ">>> STEP 5: Aggregating results"
 STEP_START=$(date +%s)
 "$PYTHON" results.py --config configs/configC_FULL_compare.yaml \
     2>&1 | tee "$DATA_DIR/../results_ccle.txt"
-log "    Results written to results_ccle.txt  [$(elapsed $STEP_START)s]
+log "    Results written to results_ccle.txt  [$(elapsed $STEP_START)s]"
 
 # ── Done ───────────────────────────────────────────────────────────────
 log ""
