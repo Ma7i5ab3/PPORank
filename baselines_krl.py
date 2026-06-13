@@ -121,7 +121,7 @@ def map_cell_ids_to_gex(full_gex, full_cell_ids, fold_cell_ids):
     # For CCLE: fold uses full names (e.g. "LN18_CENTRAL_NERVOUS_SYSTEM"), expression
     # uses stripped-lower (e.g. "ln18").  Extract the first underscore-delimited part.
     full_index = pd.Index(full_cell_ids)
-    fold_short = pd.Index(fold_cell_ids.astype(str).str.split('_').str[0].str.lower())
+    fold_short = pd.Index(fold_cell_ids.astype(str)).str.split('_').str[0].str.lower()
     matched = full_index.get_indexer(fold_short)
     valid = matched >= 0
     if not valid.all():
