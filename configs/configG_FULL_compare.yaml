@@ -8,7 +8,7 @@
 # must share the SAME `data` and `f` so the result paths line up — verify the
 # CaDRRes .npz actually lives under 100Dim before aggregating.
 analysis: FULL
-methods: ['ppo', 'CaDRRes', 'EN', 'KRR']
+methods: ['ppo', 'CaDRRes', 'EN', 'KRR', 'KRL']
 nfolds: 5
 data: data/GDSC_ALL
 tunning: False

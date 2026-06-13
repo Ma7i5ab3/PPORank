@@ -871,6 +871,55 @@ contention, not the fix; reverts when the GPU is free. Early stopping still ends
 
 ---
 
+## Session 2026-06-13 (later) — KRL properly implemented (not per-drug KernelRidge)
+
+Initial approximation (`baselines_krl.py` v1) used per-drug `KernelRidge(alpha=λ,
+kernel='precomputed')` on an RBF matrix — effectively a per-drug regression, not
+KRL.  After reading the PPORank paper (§3.1.2) and the original He et al. 2018
+implementation at `BorgwardtLab/Kernelized-Rank-Learning`, the actual KRL is:
+
+1. RBF kernel on ALL 17737 gene-expression features (raw GEX)  ✓ (same as v1)
+2. **Listwise NDCG loss** via Hungarian assignment, not per-drug MSE  ❌ v1
+3. **BMRM** (Bundle Method for Regularised Risk Minimisation, a QP-based
+   structured SVM solver, Teo et al. 2010) instead of closed-form KernelRidge
+4. **Multi-task**: a single weight matrix W (n_train × n_drugs) learned jointly
+   for all drugs — not per-drug independent.
+
+### Files created / modified
+
+| File | Change |
+|------|--------|
+| `KRL/__init__.py` | Package init |
+| `KRL/krl_core.py` | Full Python-3 port of the original KRL (`krl_core.py` + `bundle_method_kernel.py`). Changes: `xrange`→`range`, `print`→`print()`, `np.dot(A1.T, alphat)`→`np.einsum('tnm,t->nm', A1, alphat)` (3-D matmul compat), cvxopt imports streamlined |
+| `baselines_krl.py` | Rewritten: calls `KRL_fit`/`KRL_pred` from `KRL.krl_core` instead of per-drug KernelRidge. Still loads raw GEX, standardises, iterates over λ,γ grids |
+| `requirements.txt` | Added `cvxopt>=1.3.0` |
+| `configs/configG_FULL_compare.yaml` | `methods` now includes `'KRL'` |
+
+### Smell test passed
+
+Ran `KRL_fit` on synthetic data (n=30, p=100, m=8, 20% NaN) with varying
+λ,γ — produces different predictions per hyperparameter combination, BMRM
+iterates and converges (epsilon < FTOL).  Prediction shape (n_test, m) matches
+what `results.py` expects.
+
+### Caveat to document in report
+
+The PPORank paper describes KRL only as "RBF kernel on 17 737 GEX genes" and
+cites He 2018.  The authors' released code never implements KRL (only the
+result-aggregation logic in `results.py` exists).  Our port of the actual KRL
+code is the most faithful reproduction possible, but note:
+
+- The original KRL code was designed for **sparse** data settings (KEEPK,
+  few drugs per cell line); the BMRM optimiser may behave differently on
+  dense GDSC data (223 drugs per cell line, few NaN).
+- KRL in the PPORank config uses `krl_k: 10` — it trains with NDCG@10.
+- The PPORank config grids are `krl_lambdas: [0.001,0.01,0.1]` and
+  `krl_gammas: [0.001,0.01,0.1]` — narrow; the defaults in `baselines_krl.py`
+  extend to `[0.001, 0.01, 0.1, 1.0, 10.0]` for both, but the config takes
+  precedence.
+
+---
+
 ## Open issues / to verify
 
 | Issue | Priority | Notes |
@@ -880,16 +929,13 @@ contention, not the fix; reverts when the GPU is free. Early stopping still ends
 | **Is PPORank/CaDRReS too low vs paper?** | High (pending) | With features+hyperparams fixed, does PPORank climb to ~0.78–0.80 (reconciles with paper, EN≈CaDRReS≈PPORank) or stay ~0.71 (PPORank genuinely underperforms → dig deeper)? Awaiting the fixed run + CaDRReS re-aggregation (now MF-on-kernel) |
 | **PPO saturates early** | High | PPORank 0.709 beats its CaDRReS warm-start (0.668, +0.041) but plateaus at ep ~15–20 and stays below EN. Check advantage/reward normalization, actor LR/entropy |
 | **CaDRReS dim mismatch** | Medium | Paper sets CaDRReS latent dim=10; our MF pretrain uses f=100 (matches PPO). Likely why our CaDRReS is 3rd (0.668) not 2nd. Deviation to flag in report |
-| **KRL baseline (Exp 1)** | High | Not in released code; must implement (RBF kernel over all 17737 GEX genes, λ×γ tuning) like EN/KRR in `baselines.py`. CaDRReS only needs aggregation (`.npz` already written by MF pretrain) |
+| **KRL baseline (Exp 1)** | ✅ implemented | Actual KRL (He 2018) ported to Python 3 — BMRM + NDCG loss + RBF kernel on all 17737 genes. Written by inspection of the original BorgwardtLab repo; runs standalone via `baselines_krl.py`. Waiting for CV folds on the server |
 | **SRMF baseline (Exp 1)** | Low | Paper lists it in Fig 3 but says it can't predict unseen cell lines; scoring method under 5-fold CV unclear — verify before attempting |
 | **PPO-w/o (Exp 7/8 only)** | Medium | Reward ablation (drop positive eval signal), simulations only — NOT Exp 1, NOT the `--pretrain` flag. Implement when doing simulations |
 | **MET modality** | Low | Cannot reproduce GEX+MET experiment (Figure 5 incomplete) — GDSC MET permanently lost |
-| **`prepare.py` not yet run** | High | Must run before any training; no fold splits found in `data/GDSC_ALL/CV/` |
 | **Toxic drug filtering** | ✅ resolved (GDSC) | GDSC filtered 265→223 via CaDRReS `GDSC_drugMedianGE0.txt` + new filter in `prepare.py` (see section above). CCLE (24→19) still to apply when CCLE config is created. Criterion differs from paper's Iorio+PubChem description — documented caveat |
-| **GDSC vs GDSC_ALL** | Medium | `config.yaml` uses `data: GDSC`; `configG_FULL.yaml` uses `data: GDSC_ALL`; check if they refer to the same preprocessed data or to two different subsets |
 | **CCLE config** | Medium | No `configC.yaml` exists; need to create it with correct dataset path, methods, and hyperparameters |
 | **SimuData config** | Medium | No config for simulation experiments; need to create it |
-| **CaDRRes preprocessing** | High | `preprocess_fts_cl_drug.py` must be run before training to generate CaDRRes input features; not yet verified |
 | **SimuData: `prepare_simu.py` requires PyTorch** | Medium | `prepare_simu.py` imports `utils.py` which imports torch; use `split_simu_data.py` (standalone) for CV splits; `prepare_simu.py` is only needed for CaDRRes pretraining on SimuData |
 | **TCGA BRCA data** | ✅ resolved | `TCGA_BRCA.npz` and `TCGA_BRCA_clinical.csv.gz` generated 2026-06-09 |
 | **SimuData** | ✅ resolved | N=1000 and N=10000 generated 2026-06-09; CV splits in `data/SimuData/` |
