@@ -252,15 +252,26 @@ def main(Debug=False):
 
             epoch_elapsed = time.time() - epoch_start
             eta = epoch_elapsed * (epochs - epoch - 1)
+            # GPU memory diagnostics: peak *allocated* (true need) vs *reserved* (what the
+            # caching allocator holds, = what nvidia-smi shows). A big gap means
+            # fragmentation/caching, not genuine need. Peak is reset each epoch.
+            if args.cuda and torch.cuda.is_available():
+                mem_alloc = torch.cuda.max_memory_allocated(device) / 1e9
+                mem_resv = torch.cuda.max_memory_reserved(device) / 1e9
+                torch.cuda.reset_peak_memory_stats(device)
+            else:
+                mem_alloc = mem_resv = 0.0
             fp.write(f"{epoch} {ndcg_train:.4f} {train_rewards:.6f},{ndcg_test:.4f},{test_rewards:.6f}\n")
             logger.info(
                 "Epoch {}/{} | train_ndcg={:.4f} test_ndcg={:.4f} | "
                 "train_rew={:.6f} test_rew={:.6f} | loss={:.6f} | "
+                "mem_alloc={:.1f}G mem_resv={:.1f}G | "
                 "elapsed={:.1f}s ETA={:.0f}s".format(
                     epoch, epochs - 1,
                     ndcg_train, ndcg_test,
                     train_rewards, test_rewards,
                     epoch_loss,
+                    mem_alloc, mem_resv,
                     epoch_elapsed, eta))
 
             # save for every interval-th episode
