@@ -21,6 +21,12 @@ NFOLDS=5
 # Optional: set GPU device index (used only if CUDA is available)
 CUDA_ID="${CUDA_ID:-0}"
 
+# Optional: hard-cap this process's GPU memory as a fraction of total (shared GPU).
+# e.g. GPU_MEM_FRACTION=0.5 → ~40GB on an 80GB card. Empty = no cap.
+GPU_MEM_FRACTION="${GPU_MEM_FRACTION:-}"
+MEM_FLAG=""
+[ -n "$GPU_MEM_FRACTION" ] && MEM_FLAG="--gpu_mem_fraction $GPU_MEM_FRACTION"
+
 LOG_FILE="pipeline_$(date +%Y%m%d_%H%M%S).log"
 
 ts() { date +"%Y-%m-%d %H:%M:%S"; }
@@ -111,6 +117,7 @@ for FOLD_IDX in $(seq 0 $(( NFOLDS - 1 ))); do
         --nlayers_cross 2 \
         --deep_hidden_sizes 128 64 \
         --deep_out_size 32 \
+        $MEM_FLAG \
         2>&1 | tee -a "$LOG_FILE"
 
     log "    $FOLD done in $(elapsed $FOLD_START)s"

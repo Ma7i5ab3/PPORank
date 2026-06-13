@@ -376,6 +376,13 @@ def get_args():
         default=False,
         action='store_true',
         help='disable CUDA even if available')
+    parser.add_argument(
+        '--gpu_mem_fraction',
+        type=float,
+        default=None,
+        help='hard cap on this process GPU memory as a fraction of total (e.g. 0.5 = 40GB '
+             'on an 80GB card). Protects other users on a shared GPU; only this process '
+             'OOMs if it exceeds the cap. Default None = no cap.')
 
     args = parser.parse_args()
 

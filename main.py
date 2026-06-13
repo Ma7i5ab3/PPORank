@@ -61,6 +61,14 @@ def main(Debug=False):
             device, torch.cuda.get_device_name(gpu_idx), torch.version.cuda))
         logger.info("GPU memory: {:.1f} GB total".format(
             torch.cuda.get_device_properties(gpu_idx).total_memory / 1e9))
+        # Optional hard cap on this process's GPU memory (fraction of total). Protects
+        # other users on a shared GPU: if our true need exceeds the cap, ONLY this
+        # process OOMs — it can never grab memory beyond the budget and crash others.
+        if args.gpu_mem_fraction is not None:
+            torch.cuda.set_per_process_memory_fraction(args.gpu_mem_fraction, gpu_idx)
+            logger.info("GPU memory cap: {:.0%} of total (~{:.1f} GB) for this process".format(
+                args.gpu_mem_fraction,
+                args.gpu_mem_fraction * torch.cuda.get_device_properties(gpu_idx).total_memory / 1e9))
     else:
         logger.info("Device: CPU (no GPU available or --no_cuda set)")
 
