@@ -167,7 +167,23 @@ Collected proactively (not required by the main config `configG_FULL.yaml`, whic
 
 ## Experiments to reproduce
 
-Methods compared throughout: **EN**, **KRR**, **KRL**, **CaDRRes**, **PPO-w/o** (no eval signal), **PPORank**.  
+**Method sets differ by experiment** (verified against paper text, 2026-06-13):
+- **Exp 1 / 3 / 5 (real data, Fig 3/5/7)**: EN, KRR, **SRMF**, CaDRReS, **KRL**, PPORank.
+  *No* PPO-w/o here.
+- **Exp 7 / 8 (simulations, Table 2/3)**: EN, KRR, KRL, CaDRReS, **PPO-w/o**, PPORank.
+  *No* SRMF (needs drug similarity).
+
+**PPO-w/o** = PPORank trained **without positive evaluation signals**, defined only for the
+simulations (§3.5.1): during training, placing a *non-sensitive* drug in a ranking slot while
+sensitive candidates remain = **negative** signal, otherwise **positive** (sensitive = response
+above the per-drug median). PPO-w/o drops the positive component. **It is a reward ablation,
+not the `--pretrain` flag.**
+
+**KRL** (§3.1.2): RBF kernel; input features are the **RMA basal expression of all 17 737 genes**
+(not the 1610-essential-gene Pearson kernel used by PPO/EN). λ, γ tuned over grids
+(`krl_lambdas`/`krl_gammas` in configs). Not implemented in the released code — must be written
+like EN/KRR in `baselines.py`. Ref: He, Folkman, Borgwardt, *Bioinformatics* 2018;34(16):2808.
+
 Metrics: full-rank NDCG, NDCG@k and Precision@k for k ∈ {1, 5, 10}.
 
 ### Experiment 1 — Full dataset prediction (Section 3.1.4, Figure 3)
@@ -175,6 +191,11 @@ Metrics: full-rank NDCG, NDCG@k and Precision@k for k ∈ {1, 5, 10}.
   Paper result: PPORank best (consistent improvement, SD=0.003); CaDRRes second (SD=0.011).
 - **CCLE** (GEX only, 5-fold CV): compare mean NDCG.  
   Paper result: PPORank marginally better (0.7611 vs 0.7468 EN, 0.7432 CaDRRes).
+- **EN detail** (§3.1.2): one model per drug, scikit-learn, **l1_ratio fixed = 0.5** (our
+  `baselines.py` tunes l1_ratio over a grid → minor deviation to note).
+- **SRMF caveat**: paper lists it among Fig 3 methods but also states it "cannot make
+  predictions on unseen cell lines"; how it was scored under unseen-cell-line 5-fold CV is
+  unclear — to verify before attempting.
 
 ### Experiment 2 — DNN vs PPORank over training epochs (Section 3.1.4, Figure 4)
 - GDSC only: track NDCG over epochs (up to 600); PPORank approaches DNN trained with approximate NDCG loss.
@@ -199,9 +220,16 @@ Metrics: full-rank NDCG, NDCG@k and Precision@k for k ∈ {1, 5, 10}.
 - 3 scenarios: linear (Y=0.2·XW+ε), cubic (Y=0.15·X³W+0.15·XW+ε), exponential (Y=0.1·exp(X)W+0.1·X³W+ε).
 - N=1000 cell lines, 100 drugs, 2000 features; repeated at n=10000.
 - Original cell line features X used directly (not Pearson kernel).
+- Methods: EN, KRR, KRL, CaDRReS, **PPO-w/o**, PPORank (no SRMF — needs drug similarity).
+- Preprocessing: negative responses set missing; 50% of remaining set missing; sensitive =
+  above per-drug median (drives the positive/negative evaluation signal for PPO vs PPO-w/o).
+- Paper Table 2 (mean NDCG, n=1000 / n=10000): PPORank 0.790/0.832 (sc1), 0.651/0.705 (sc2),
+  0.941/0.959 (sc3); PPO-w/o 0.798/0.811, 0.670/0.693, 0.940/0.948.
 
 ### Experiment 8 — Secondary simulations (Section 3.5.2, Table 3)
 - Mixed scenario (40 drugs: first 20 linear, next 10 cubic, last 10 exponential), n=1000 and n=10000.
+- Same method set as Exp 7. Paper Table 3 (mean NDCG): PPORank 0.721/0.732, PPO-w/o 0.701/0.713,
+  KRL 0.689/0.707, CaDRReS 0.647/0.689, EN 0.645/0.679, KRR 0.641/0.650.
 
 ---
 
@@ -602,7 +630,9 @@ the paper's reported PPORank-vs-EN gap (possible reproduction discrepancy).
 | Issue | Priority | Notes |
 |-------|----------|-------|
 | **PPO < EN, RL phase stalls** | High | PPORank 0.709 vs EN 0.778 (223-drug run). test_ndcg peaks at ep ~5–20 then early-stops; loss flat → RL not improving over MF warm-start. Check advantage/reward normalization, actor LR/entropy; compare to paper's PPO-vs-EN gap |
-| **KRL / CaDRRes baselines** | Medium | Exp 1 comparison still missing these two methods; only EN/KRR run so far (`configG_FULL_compare.yaml`) |
+| **KRL baseline (Exp 1)** | High | Not in released code; must implement (RBF kernel over all 17737 GEX genes, λ×γ tuning) like EN/KRR in `baselines.py`. CaDRReS only needs aggregation (`.npz` already written by MF pretrain) |
+| **SRMF baseline (Exp 1)** | Low | Paper lists it in Fig 3 but says it can't predict unseen cell lines; scoring method under 5-fold CV unclear — verify before attempting |
+| **PPO-w/o (Exp 7/8 only)** | Medium | Reward ablation (drop positive eval signal), simulations only — NOT Exp 1, NOT the `--pretrain` flag. Implement when doing simulations |
 | **MET modality** | Low | Cannot reproduce GEX+MET experiment (Figure 5 incomplete) — GDSC MET permanently lost |
 | **`prepare.py` not yet run** | High | Must run before any training; no fold splits found in `data/GDSC_ALL/CV/` |
 | **Toxic drug filtering** | ✅ resolved (GDSC) | GDSC filtered 265→223 via CaDRReS `GDSC_drugMedianGE0.txt` + new filter in `prepare.py` (see section above). CCLE (24→19) still to apply when CCLE config is created. Criterion differs from paper's Iorio+PubChem description — documented caveat |

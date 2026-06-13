@@ -43,7 +43,10 @@ keepk_ratios_G: [1.0, 0.5, 0.1]
 keepk_ratios_C: [1.0, 0.6, 0.3]
 keepk_ratios: [1.0, 0.5, 0.1]
 
-k_max: [265,26]
+# full-rank NDCG count = number of drugs after the toxic-drug filter (265 -> 223).
+# NDCG@265 == NDCG@223 numerically (DCG stops at the 223 available drugs), but 223
+# is the honest label now that prepare.py filters via GDSC_drugMedianGE0.txt.
+k_max: [223,26]
 single_k: 265
 
 cv_metric: ['NDCG',"precision"]
