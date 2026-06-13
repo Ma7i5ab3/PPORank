@@ -76,13 +76,38 @@ def parse_args():
     return p.parse_args()
 
 
-def load_full_gex(data_dir):
+def load_full_gex_gdsc(data_dir):
     npz_path = os.path.join(data_dir, "GDSC_GEX.npz")
     if not os.path.exists(npz_path):
         raise FileNotFoundError(
             "GDSC_GEX.npz not found at {}. Run load_dataset.py first.".format(npz_path))
     data = np.load(npz_path)
     return data['X'].astype(np.float64), data['cell_ids']
+
+
+def load_full_gex_ccle(data_dir):
+    expr_path = os.path.join(data_dir, "CCLE_expression.csv")
+    if not os.path.exists(expr_path):
+        raise FileNotFoundError(
+            "CCLE_expression.csv not found at {}. Download from DepMap.".format(expr_path))
+    meta_path = os.path.join(data_dir, "sample_info.csv")
+    if not os.path.exists(meta_path):
+        raise FileNotFoundError(
+            "sample_info.csv not found at {}. Download from DepMap.".format(meta_path))
+
+    expr = pd.read_csv(expr_path, index_col=0)          # (1376, 19177)  DepMap_ID x genes
+    meta = pd.read_csv(meta_path)
+    meta = meta[['DepMap_ID', 'CCLE_Name']].dropna(subset=['CCLE_Name'])
+    # CCLE_Name column has format like "LN18_CENTRAL_NERVOUS_SYSTEM"
+    meta['CCLE_short'] = meta['CCLE_Name'].str.split('_').str[0].str.lower()
+
+    # Map: DepMap_ID -> CCLE_short, average any duplicates
+    id_to_short = dict(zip(meta['DepMap_ID'], meta['CCLE_short']))
+    expr.index = expr.index.map(id_to_short)
+    expr = expr.dropna(how='all')                      # drop unmapped rows
+    # Average rows with the same short name (rare duplicate DepMap -> same CCLE line)
+    expr = expr.groupby(expr.index).mean()
+    return expr.values.astype(np.float64), expr.index.values
 
 
 def load_fold_y(fold_dir):
@@ -92,12 +117,15 @@ def load_fold_y(fold_dir):
 
 
 def map_cell_ids_to_gex(full_gex, full_cell_ids, fold_cell_ids):
+    # For GDSC: cell_ids are numeric strings (e.g. "1240121"), matching as-is.
+    # For CCLE: fold uses full names (e.g. "LN18_CENTRAL_NERVOUS_SYSTEM"), expression
+    # uses stripped-lower (e.g. "ln18").  Extract the first underscore-delimited part.
     full_index = pd.Index(full_cell_ids)
-    fold_index = pd.Index(fold_cell_ids.astype(str))
-    matched = full_index.get_indexer(fold_index)
+    fold_short = pd.Index(fold_cell_ids.astype(str).str.split('_').str[0].str.lower())
+    matched = full_index.get_indexer(fold_short)
     valid = matched >= 0
     if not valid.all():
-        logger.warning("%d cell line(s) from fold not found in GDSC_GEX.npz", (~valid).sum())
+        logger.warning("%d cell line(s) from fold not found in expression data", (~valid).sum())
     return full_gex[matched[valid]], valid
 
 
@@ -121,9 +149,16 @@ def main():
     krl_k = config.get("krl_k", 10)     # NDCG@k truncation during training
 
     data_dir = os.path.join(os.getcwd(), data_name) if not data_name.startswith(os.sep) else data_name
+    data_kind = os.path.basename(data_name)
 
-    logger.info("Loading GDSC_GEX.npz from %s ...", data_dir)
-    full_gex, full_cell_ids = load_full_gex(data_dir)
+    if data_kind.startswith("GDSC"):
+        logger.info("Loading GDSC_GEX.npz from %s ...", data_dir)
+        full_gex, full_cell_ids = load_full_gex_gdsc(data_dir)
+    elif data_kind == "CCLE":
+        logger.info("Loading CCLE_expression.csv from %s ...", data_dir)
+        full_gex, full_cell_ids = load_full_gex_ccle(data_dir)
+    else:
+        raise ValueError("Unsupported dataset: {}".format(data_kind))
     logger.info("Full GEX: %d cell lines x %d genes", full_gex.shape[0], full_gex.shape[1])
 
     fold_root = os.path.join(data_dir, "CV", "FULL")
@@ -148,7 +183,7 @@ def main():
         scaler = StandardScaler()
         x_tr = scaler.fit_transform(x_tr_raw)
         x_te = scaler.transform(x_te_raw)
-        logger.info("  Xtrain: %s, Xtest: %s (standardised 17737-gene GEX)", x_tr.shape, x_te.shape)
+        logger.info("  Xtrain: %s, Xtest: %s (standardised expression)", x_tr.shape, x_te.shape)
 
         for lam in lambdas:
             for gam in gammas:

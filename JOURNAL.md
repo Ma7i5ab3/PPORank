@@ -920,6 +920,67 @@ code is the most faithful reproduction possible, but note:
 
 ---
 
+## Session 2026-06-13 — CCLE pipeline code fixes + data download
+
+### Problem
+
+The CCLE experiment (Exp 1, Figure 3A) was blocked by two issues: (a) missing raw
+gene-expression data for KRL, and (b) the `Data_All=False` path in `prepare.py` was
+untested — it crashed because `kernel_feature_df` was undefined and `utils.read_FULL()`
+lacked a CCLE branch.
+
+### Data downloaded
+
+| File | Source | Size |
+|------|--------|------|
+| `data/CCLE/CCLE_expression.csv` | DepMap 20Q2 figshare (RNA-seq, log2(TPM+1), 19178 protein-coding genes) | 408 MB |
+| `data/CCLE/sample_info.csv` | DepMap figshare (maps DepMap ACH-ID → CCLE name) | 451 KB |
+
+Mapping verified: 973 / 1035 kernel cell lines found in expression data (more than
+the paper's 491 — the IC50 ∏ kernel ∏ expression intersect lands at 491, matching).
+
+### Code changes
+
+| File | Change |
+|------|--------|
+| `prepare.py` (line 229) | `Data_All=False` branch: added `kernel_feature_df = X` so the CV-split code saves `Xtrain_kernel.csv` / `Xtest_kernel.csv` for CCLE too |
+| `utils.py:read_FULL` | Replaced GDSC_ALL-specific check with file-existence test for `Xtrain_kernel.csv` — works for GDSC_ALL, CCLE, and any future CSV-based dataset |
+| `utils.py:read_PROP` | Same fix |
+| `configs/configC_FULL_compare.yaml` | New: CCLE FULL comparison config (`methods: ['ppo', 'CaDRRes', 'EN', 'KRR', 'KRL']`, `nfolds: 5`, `k_max: [223, 19]`, `Data_All: False`, `Source: CCLE`) |
+| `configs/configC_FULL_ppo.yaml` | New: PPO-only aggregation config (same data/folds) |
+| `baselines_krl.py` | Added `load_full_gex_ccle()`: reads `CCLE_expression.csv` + `sample_info.csv`, maps ACH-ID → stripped CCLE name, deduplicates. Updated `main()` to detect dataset kind via `data_kind = os.path.basename(data_name)`. Updated `map_cell_ids_to_gex` to handle both GDSC (numeric-string IDs) and CCLE (CCLE_Name → stripped-lower) |
+| `run_pipeline_ccle.sh` | New: full CCLE pipeline script — CV split + MF pretrain → PPO (8 actors) → EN/KRR baselines → KRL → aggregate. Dry-run safe (skips completed steps) |
+
+### Paper cross-check — CCLE drug count
+
+Riletto §3.1.1 del paper. Il paper conferma il filtro tossico per **entrambi** i dataset:
+
+> "After deleting toxic drugs, we have **223 drugs for GDSC** and **19 drugs for CCLE**."
+
+Quindi la nostra pipeline è corretta: `CCLE_drugMedianGE0.txt` (19 drug) e `GDSC_drugMedianGE0.txt`
+(223 drug) corrispondono ai conteggi del paper. Il criterio di filtro (CaDRReS median-GE0 vs Iorio
+outlier detection) potrebbe differire, ma il numero di drug risultante è identico.
+
+### How to run on the server (after committing/pushing)
+
+```bash
+cd PPORank
+git pull
+conda activate pporank
+
+# Full end-to-end (CV split → PPO → baselines → KRL → aggregate):
+bash run_pipeline_ccle.sh
+
+# Or step-by-step:
+python prepare.py --data_dir data/CCLE --Source CCLE --decompose --config configs/configC_FULL_compare.yaml
+python main.py --num_processes 8 --Data data/CCLE --analysis FULL --algo ppo --f 100 --normalize_y --fold Fold0 ...
+python baselines.py --config configs/configC_FULL_compare.yaml --methods EN KRR --overwrite
+python baselines_krl.py --config configs/configC_FULL_compare.yaml --overwrite
+python results.py --config configs/configC_FULL_compare.yaml
+```
+
+---
+
 ## Open issues / to verify
 
 | Issue | Priority | Notes |
@@ -929,12 +990,12 @@ code is the most faithful reproduction possible, but note:
 | **Is PPORank/CaDRReS too low vs paper?** | High (pending) | With features+hyperparams fixed, does PPORank climb to ~0.78–0.80 (reconciles with paper, EN≈CaDRReS≈PPORank) or stay ~0.71 (PPORank genuinely underperforms → dig deeper)? Awaiting the fixed run + CaDRReS re-aggregation (now MF-on-kernel) |
 | **PPO saturates early** | High | PPORank 0.709 beats its CaDRReS warm-start (0.668, +0.041) but plateaus at ep ~15–20 and stays below EN. Check advantage/reward normalization, actor LR/entropy |
 | **CaDRReS dim mismatch** | Medium | Paper sets CaDRReS latent dim=10; our MF pretrain uses f=100 (matches PPO). Likely why our CaDRReS is 3rd (0.668) not 2nd. Deviation to flag in report |
-| **KRL baseline (Exp 1)** | ✅ implemented | Actual KRL (He 2018) ported to Python 3 — BMRM + NDCG loss + RBF kernel on all 17737 genes. Written by inspection of the original BorgwardtLab repo; runs standalone via `baselines_krl.py`. Waiting for CV folds on the server |
+| **KRL baseline (Exp 1)** | ✅ implemented | Actual KRL (He 2018) ported to Python 3 — BMRM + NDCG loss + RBF kernel on all 17737 genes. Runs on GDSC (`GDSC_GEX.npz`) and CCLE (`CCLE_expression.csv` + `sample_info.csv`). |
+| **CCLE pipeline** | ✅ code + data ready | `prepare.py` fixed, `utils.py` fixed, configs created, `baselines_krl.py` supports CCLE, `run_pipeline_ccle.sh` ready. Waiting for PPORank GDSC run to finish before starting CCLE |
 | **SRMF baseline (Exp 1)** | Low | Paper lists it in Fig 3 but says it can't predict unseen cell lines; scoring method under 5-fold CV unclear — verify before attempting |
 | **PPO-w/o (Exp 7/8 only)** | Medium | Reward ablation (drop positive eval signal), simulations only — NOT Exp 1, NOT the `--pretrain` flag. Implement when doing simulations |
 | **MET modality** | Low | Cannot reproduce GEX+MET experiment (Figure 5 incomplete) — GDSC MET permanently lost |
-| **Toxic drug filtering** | ✅ resolved (GDSC) | GDSC filtered 265→223 via CaDRReS `GDSC_drugMedianGE0.txt` + new filter in `prepare.py` (see section above). CCLE (24→19) still to apply when CCLE config is created. Criterion differs from paper's Iorio+PubChem description — documented caveat |
-| **CCLE config** | Medium | No `configC.yaml` exists; need to create it with correct dataset path, methods, and hyperparameters |
+| **Toxic drug filtering** | ✅ resolved (both) | Paper §3.1.1: "After deleting toxic drugs, we have 223 drugs for GDSC and 19 drugs for CCLE." Our CaDRReS median-GE0 filter produces the exact same counts. GDSC via `GDSC_drugMedianGE0.txt` in `prepare.py` (`Data_All=True` branch), CCLE via `CCLE_drugMedianGE0.txt` in the `Data_All=False` branch. Caveat: the criterion (median-GE0 vs Iorio outlier detection + PubChem) may differ, though drug counts match |
 | **SimuData config** | Medium | No config for simulation experiments; need to create it |
 | **SimuData: `prepare_simu.py` requires PyTorch** | Medium | `prepare_simu.py` imports `utils.py` which imports torch; use `split_simu_data.py` (standalone) for CV splits; `prepare_simu.py` is only needed for CaDRRes pretraining on SimuData |
 | **TCGA BRCA data** | ✅ resolved | `TCGA_BRCA.npz` and `TCGA_BRCA_clinical.csv.gz` generated 2026-06-09 |

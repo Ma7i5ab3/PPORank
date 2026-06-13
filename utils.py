@@ -40,7 +40,18 @@ def read_PROP(data_name, prop, CV="CV", i=0, j=None):
     data_dir = os.path.join(os.getcwd(), data_name, CV, "FULL", "Fold{}".format(i))
 
     if not j:
-        if "GDSC_ALL" not in data_name:
+        if os.path.isdir(data_dir) and os.path.exists(os.path.join(data_dir, "Xtrain_kernel.csv")):
+            Ytrain_full = pd.read_csv(os.path.join(data_dir, "YtrainDf.csv"), index_col=0)
+            Ytest = pd.read_csv(os.path.join(data_dir, "YtestDf.csv"), index_col=0)
+            Xtrain_full = pd.read_csv(os.path.join(data_dir, "Xtrain_kernel.csv"), index_col=0)
+            Xtest = pd.read_csv(os.path.join(data_dir, "Xtest_kernel.csv"), index_col=0)
+
+            N, P = Xtrain_full.shape
+            train_num = math.floor(N*prop)
+            inds = np.random.choice(N, train_num)
+            Xtrain = Xtrain_full.iloc[inds]
+            Ytrain = Ytrain_full.iloc[inds]
+        else:
             # only with train and test data
             train_data = np.load(data_dir+"/FulltrainDf.npz")
             Xtrain = train_data["Xtrain"]
@@ -48,23 +59,6 @@ def read_PROP(data_name, prop, CV="CV", i=0, j=None):
             test_data = np.load(data_dir+"/FulltestDf.npz")
             Xtest = test_data['Xtest']
             Ytest = test_data['Ytest']
-        elif "GDSC_ALL" in data_name:
-
-            Ytrain_full = pd.read_csv(os.path.join(data_dir, "YtrainDf.csv"), index_col=0)
-            Ytest = pd.read_csv(os.path.join(data_dir, "YtestDf.csv"), index_col=0)
-            # Paper-faithful: Pearson cell-line kernel, not raw essential-gene expression
-            # (see read_FULL). CAVEAT for prop<1.0 (Exp 4 online): row subsampling below
-            # keeps all train-cell-line kernel columns, so Xtrain/Xtest stay (·, n_train)
-            # while WP is (n_train, f) — revisit kernel-column handling when doing Exp 4.
-            Xtrain_full = pd.read_csv(os.path.join(data_dir, "Xtrain_kernel.csv"), index_col=0)
-            Xtest = pd.read_csv(os.path.join(data_dir, "Xtest_kernel.csv"), index_col=0)
-            print("for GDSC ALL we are using the Pearson cell-line kernel ({} features)".format(Xtrain_full.shape[1]))
-
-            N, P = Xtrain_full.shape
-            train_num = math.floor(N*prop)
-            inds = np.random.choice(N, train_num)
-            Xtrain = Xtrain_full.iloc[inds]
-            Ytrain = Ytrain_full.iloc[inds]
     else:
         # train and val data
         train_data = np.load(data_dir + "/trainDf_fold{}.npz".format(j))
@@ -85,7 +79,15 @@ def read_FULL(data_name, CV="CV", i=0, j=None):
     data_dir = os.path.join(os.getcwd(), data_name, CV, "FULL", "Fold{}".format(i))
 
     if not j:
-        if "GDSC_ALL" not in data_name:
+        # Datasets using CSV-based CV folds (GDSC_ALL, CCLE) read via kernel CSVs.
+        # The old SimuData / non-CSV format uses .npz files — detect by existence.
+        if os.path.isdir(data_dir) and os.path.exists(os.path.join(data_dir, "Xtrain_kernel.csv")):
+
+            Ytrain = pd.read_csv(os.path.join(data_dir, "YtrainDf.csv"), index_col=0)
+            Ytest = pd.read_csv(os.path.join(data_dir, "YtestDf.csv"), index_col=0)
+            Xtrain = pd.read_csv(os.path.join(data_dir, "Xtrain_kernel.csv"), index_col=0)
+            Xtest = pd.read_csv(os.path.join(data_dir, "Xtest_kernel.csv"), index_col=0)
+        else:
             # only with train and test data
             train_data = np.load(data_dir+"/FulltrainDf.npz")
             Xtrain = train_data["Xtrain"]
@@ -93,17 +95,6 @@ def read_FULL(data_name, CV="CV", i=0, j=None):
             test_data = np.load(data_dir+"/FulltestDf.npz")
             Xtest = test_data['Xtest']
             Ytest = test_data['Ytest']
-        elif "GDSC_ALL" in data_name:
-
-            Ytrain = pd.read_csv(os.path.join(data_dir, "YtrainDf.csv"), index_col=0)
-            Ytest = pd.read_csv(os.path.join(data_dir, "YtestDf.csv"), index_col=0)
-            # Paper-faithful cell-line features: the Pearson correlation kernel over
-            # essential-gene fold-changes (CaDRReS representation), NOT the raw
-            # essential-gene expression in Xtrain_rawDf.csv. PPORank/CaDRReS must use
-            # the kernel (EN keeps rawDf, KRR keeps kernel — both via baselines.py).
-            Xtrain = pd.read_csv(os.path.join(data_dir, "Xtrain_kernel.csv"), index_col=0)
-            Xtest = pd.read_csv(os.path.join(data_dir, "Xtest_kernel.csv"), index_col=0)
-            print("for GDSC ALL we are using the Pearson cell-line kernel ({} features)".format(Xtrain.shape[1]))
     else:
         # train and val data
         train_data = np.load(data_dir + "/trainDf_fold{}.npz".format(j))

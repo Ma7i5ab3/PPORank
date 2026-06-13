@@ -227,6 +227,10 @@ def Split_Data():
         # S matrix, the cellline_drug_matrix
         Y = ss_df  # (985,223),
         X = cl_features_df.loc[P]  # (985,985)
+        # For Data_All=False the feature matrix IS the Pearson kernel (same as
+        # kernel_feature_df in the Data_All=True branch), so downstream code
+        # that uses kernel_feature_df for Xtrain_kernel.csv works unchanged.
+        kernel_feature_df = X
 
     # when it is keepk, use 3fold cv
     if args.data_dir.startswith('GDSC') and analysis == "KEEPK":

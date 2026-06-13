@@ -1,0 +1,40 @@
+analysis: FULL
+methods: ['ppo', 'CaDRRes', 'EN', 'KRR', 'KRL']
+nfolds: 5
+data: data/CCLE
+tunning: False
+
+Data_All: False
+seed: 1234
+
+f: 100
+
+N: 393
+P: 491
+M: 19
+
+krl_lambdas: [0.001, 0.01, 0.1]
+krl_gammas: [0.001, 0.01, 0.1]
+kbmtl_alphas: [0.001]
+kbmtl_betas: [0.001]
+kbmtl_gammas: [0.001]
+krr_alphas: [0.01, 0.1, 1, 10, 100]
+krr_gammas: [0.001]
+rf_nestimators: [100]
+en_alphas: [0.001, 0.01, 0.1, 1, 10]
+en_l1ratios: [0.5]
+krl_k: 10
+
+rank_ks: [1, 5, 10]
+
+keepk: 5
+rank_all: True
+keepk_ratios_G: [1.0, 0.5, 0.1]
+keepk_ratios_C: [1.0, 0.6, 0.3]
+keepk_ratios: [1.0, 0.5, 0.1]
+
+k_max: [223, 19]
+
+cv_metric: ['NDCG', "precision"]
+
+Debug: False
