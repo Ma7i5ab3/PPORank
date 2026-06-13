@@ -28,7 +28,7 @@ CUDA_ID="${CUDA_ID:-0}"
 
 # Optional: hard-cap this process's GPU memory as a fraction of total (shared GPU).
 # e.g. GPU_MEM_FRACTION=0.5 → ~40GB on an 80GB card. Empty = no cap.
-GPU_MEM_FRACTION="${GPU_MEM_FRACTION:-}"
+GPU_MEM_FRACTION="${GPU_MEM_FRACTION:-0.47}"
 MEM_FLAG=""
 [ -n "$GPU_MEM_FRACTION" ] && MEM_FLAG="--gpu_mem_fraction $GPU_MEM_FRACTION"
 

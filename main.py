@@ -45,9 +45,10 @@ def main(Debug=False):
     else:
         device = args.device
 
-    if args.cuda and torch.cuda.is_available() and args.cuda_deterministic:
+    if args.cuda and torch.cuda.is_available():
         torch.backends.cudnn.benchmark = False
-        torch.backends.cudnn.deterministic = True
+        if args.cuda_deterministic:
+            torch.backends.cudnn.deterministic = True
 
     np.random.seed(args.seed)
 
@@ -281,6 +282,9 @@ def main(Debug=False):
                     epoch_loss,
                     mem_alloc, mem_resv,
                     epoch_elapsed, eta))
+
+            if args.cuda and torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
             # save for every interval-th episode
 
