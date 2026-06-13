@@ -32,7 +32,8 @@ krr_alphas: [0.01,0.1,1,10,100]
 krr_gammas: [0.001]
 rf_nestimators: [100]
 en_alphas: [0.001,0.01,0.1,1,10]
-en_l1ratios: [0.1,0.3,0.5,0.7,0.9]
+# l1_ratio fixed to 0.5 per paper §3.1.2 ("Elastic Net ... l1 ratio = 0.5"); only alpha tuned.
+en_l1ratios: [0.5]
 krl_k: 10
 
 rank_ks: [1,5,10]

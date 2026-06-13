@@ -19,10 +19,16 @@ target matrices used by PPORank (and CaDRRes), so the comparison is fair.
 
 INPUTS (written by prepare.py Split_Data, one folder per fold)
     <data>/CV/FULL/Fold{i}/
-        Xtrain_rawDf.csv   raw cell-line features (gene expression)   [EN]
+        Xtrain_rawDf.csv   raw cell-line features (gene expression)   [unused now]
         Xtest_rawDf.csv
-        Xtrain_kernel.csv  train x train Pearson kernel               [KRR]
-        Xtest_kernel.csv   test  x train Pearson kernel               [KRR]
+        Xtrain_kernel.csv  train x train Pearson kernel               [EN, KRR]
+        Xtest_kernel.csv   test  x train Pearson kernel               [EN, KRR]
+
+    NOTE (2026-06-13): EN now uses the Pearson cell-line kernel (same "cell line
+    features" as CaDRReS/PPORank/KRR), per the paper's fair-comparison setup
+    (§3.1.2, §3.1.1). It previously used raw gene expression, which made EN
+    anomalously strong (a different, more expressive feature space than the
+    ranking methods). KRL is the only method that uses raw genes (paper §3.1.2).
         YtrainDf.csv       drug-sensitivity matrix (-log IC50)
         YtestDf.csv
 
@@ -164,6 +170,26 @@ def tune_en(Xtr, Ytr, val_frac, seed, min_samples, alphas, l1s):
     return best[1], best[2], best[0]
 
 
+def tune_en_kernel(Ktr, Ytr, val_frac, seed, min_samples, alphas, l1s):
+    """ElasticNet over Pearson-kernel features. Restricts the kernel columns to the
+    inner-train cell lines (Kvi = Ktr[val, inner]) — mirrors tune_krr — so the held-out
+    val cell lines are represented only by correlations to the inner-train set (no leakage)."""
+    inner, val = split_inner(Ktr.shape[0], val_frac, seed)
+    Xi_raw = Ktr[np.ix_(inner, inner)]
+    Xv_raw = Ktr[np.ix_(val, inner)]
+    scaler = StandardScaler().fit(Xi_raw)
+    Xi, Xv = scaler.transform(Xi_raw), scaler.transform(Xv_raw)
+    k = Ytr.shape[1]
+    best = (-np.inf, alphas[0], l1s[0])
+    for a in alphas:
+        for l1 in l1s:
+            pred = fit_predict_en(Xi, Ytr[inner], Xv, a, l1, min_samples)
+            score = np.nanmean(NDCGk(Ytr[val], pred, k))
+            if score > best[0]:
+                best = (score, a, l1)
+    return best[1], best[2], best[0]
+
+
 def tune_krr(Ktr, Ytr, val_frac, seed, min_samples, alphas):
     inner, val = split_inner(Ktr.shape[0], val_frac, seed)
     Kii = Ktr[np.ix_(inner, inner)]
@@ -214,11 +240,15 @@ def main():
             Yte = Yte_df.values.astype(float)
 
             if method == "EN":
-                a, l1, vs = tune_en(Xtr_df.values, Ytr, args.val_frac, args.seed,
-                                    args.min_samples, en_alphas, en_l1s)
-                scaler = StandardScaler().fit(Xtr_df.values)
-                Xtr = scaler.transform(Xtr_df.values)
-                Xte = scaler.transform(Xte_df.values)
+                # Paper §3.1.2 "fair comparison ... same cell line features": EN on the
+                # Pearson cell-line kernel (like CaDRReS/PPORank/KRR), not raw genes.
+                # Final fit trains on the full train kernel (Ktr, n_train x n_train) and
+                # predicts on Kte (n_test x n_train); columns = train cell lines.
+                a, l1, vs = tune_en_kernel(Ktr_df.values, Ytr, args.val_frac, args.seed,
+                                           args.min_samples, en_alphas, en_l1s)
+                scaler = StandardScaler().fit(Ktr_df.values)
+                Xtr = scaler.transform(Ktr_df.values)
+                Xte = scaler.transform(Kte_df.values)
                 Ypred = fit_predict_en(Xtr, Ytr, Xte, a, l1, args.min_samples)
                 params = "alpha={}, l1_ratio={} (val NDCG={:.4f})".format(a, l1, vs)
             else:  # KRR
