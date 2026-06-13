@@ -1,0 +1,384 @@
+[2026-06-13 09:55:20] ======================================================
+[2026-06-13 09:55:20] PPORank pipeline — Sat Jun 13 09:55:20 AM UTC 2026
+[2026-06-13 09:55:20] Python  : python
+[2026-06-13 09:55:20] Data    : data/GDSC_ALL
+[2026-06-13 09:55:20] Folds   : 5
+[2026-06-13 09:55:20] CUDA ID : 0
+[2026-06-13 09:55:20] Log     : pipeline_20260613_095520.log
+[2026-06-13 09:55:20] ======================================================
+[2026-06-13 09:55:20] 
+[2026-06-13 09:55:20] >>> STEP 1: Preprocessing raw GDSC files
+[2026-06-13 09:55:20]     GDSC_GEX.npz already exists — skipping Step 1
+[2026-06-13 09:55:20] 
+[2026-06-13 09:55:20] >>> STEP 2: CV split + kernel features + MF layer pretraining
+[2026-06-13 09:55:20]     CV folds already exist — checking MF pretraining...
+[2026-06-13 09:55:20]     MF pretrained weights already exist — skipping Step 2
+[2026-06-13 09:55:20] 
+[2026-06-13 09:55:20] >>> STEP 3: Training PPORank (5 folds)
+[2026-06-13 09:55:20] 
+[2026-06-13 09:55:20]   --- Fold0 ---
+2026-06-13 09:55:22,424      set_log [INFO]	Model Name is ppo_data_GDSC_ALL_FULL_f100__Sraw_B16_D2_C2_Fold0
+2026-06-13 09:55:22,427      set_log [INFO]	Device: cuda:0 | GPU: NVIDIA H100 PCIe | CUDA 12.1
+2026-06-13 09:55:22,427      set_log [INFO]	GPU memory: 85.0 GB total
+2026-06-13 09:55:22,557      set_log [INFO]	GPU memory cap: 47% of total (~40.0 GB) for this process
+2026-06-13 09:55:22,558      set_log [INFO]	model saved directory /home/arianna/projects/PPORank/Saved/ppo_data_GDSC_ALL_FULL_f100__Sraw_B16_D2_C2_Fold0
+2026-06-13 09:55:24,338      set_log [INFO]	Load WP with dimesnion 769,100
+2026-06-13 09:55:24,338      set_log [INFO]	Load drug embedding  with dimesnion 223,100
+2026-06-13 09:55:24,338      set_log [INFO]	Sample size N  is 769, drug size M is 223, cellline features P is 769 with projection dimension is 100
+2026-06-13 09:55:24,339      set_log [INFO]	results saved file name is ./results/data/GDSC_ALL/ppo_data_GDSC_ALL_FULL_f100__Sraw_B16_D2_C2_Fold0_PPOresult.txt
+2026-06-13 09:55:24,972      set_log [INFO]	total params in PPO is 158954
+2026-06-13 09:55:25,020      set_log [INFO]	=== Training started: 1400 epochs, 16 processes, device=cuda:0 ===
+2026-06-13 09:56:11,753      set_log [INFO]	Epoch 0/1399 | train_ndcg=0.6905 test_ndcg=0.6748 | train_rew=79174.820312 test_rew=84010.523438 | loss=8407666.188264 | mem_alloc=1.6G mem_resv=2.2G | elapsed=46.7s ETA=65378s
+2026-06-13 09:56:55,928      set_log [INFO]	Epoch 1/1399 | train_ndcg=0.7148 test_ndcg=0.7078 | train_rew=84170.523438 test_rew=91401.289062 | loss=11882573.713293 | mem_alloc=1.8G mem_resv=2.3G | elapsed=44.1s ETA=61687s
+2026-06-13 09:57:40,576      set_log [INFO]	Epoch 2/1399 | train_ndcg=0.7171 test_ndcg=0.7122 | train_rew=85272.968750 test_rew=92851.585938 | loss=14237917.317436 | mem_alloc=1.8G mem_resv=2.3G | elapsed=44.6s ETA=62313s
+2026-06-13 09:58:24,989      set_log [INFO]	Epoch 3/1399 | train_ndcg=0.7175 test_ndcg=0.7138 | train_rew=85288.500000 test_rew=93289.320312 | loss=14750544.749610 | mem_alloc=1.9G mem_resv=2.3G | elapsed=44.4s ETA=61941s
+2026-06-13 09:59:10,110      set_log [INFO]	Epoch 4/1399 | train_ndcg=0.7183 test_ndcg=0.7142 | train_rew=85476.601562 test_rew=93178.945312 | loss=15640709.143137 | mem_alloc=1.8G mem_resv=2.4G | elapsed=45.1s ETA=62885s
+2026-06-13 09:59:54,772      set_log [INFO]	Epoch 5/1399 | train_ndcg=0.7183 test_ndcg=0.7132 | train_rew=85201.789062 test_rew=93157.273438 | loss=15407567.431568 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.6s ETA=62194s
+2026-06-13 10:00:39,862      set_log [INFO]	Epoch 6/1399 | train_ndcg=0.7173 test_ndcg=0.7125 | train_rew=85259.851562 test_rew=93026.148438 | loss=15219141.229325 | mem_alloc=1.8G mem_resv=2.2G | elapsed=45.1s ETA=62802s
+2026-06-13 10:01:41,576      set_log [INFO]	Epoch 7/1399 | train_ndcg=0.7154 test_ndcg=0.7104 | train_rew=84793.750000 test_rew=92728.835938 | loss=15078956.914030 | mem_alloc=1.8G mem_resv=2.1G | elapsed=61.7s ETA=85900s
+2026-06-13 10:03:56,883      set_log [INFO]	Epoch 8/1399 | train_ndcg=0.7125 test_ndcg=0.7082 | train_rew=84187.367188 test_rew=92386.906250 | loss=14484454.358112 | mem_alloc=1.8G mem_resv=2.3G | elapsed=135.3s ETA=188204s
+2026-06-13 10:06:11,921      set_log [INFO]	Epoch 9/1399 | train_ndcg=0.7087 test_ndcg=0.7051 | train_rew=83658.054688 test_rew=92171.750000 | loss=13530888.173793 | mem_alloc=1.8G mem_resv=2.3G | elapsed=135.0s ETA=187695s
+2026-06-13 10:07:14,467      set_log [INFO]	Epoch 10/1399 | train_ndcg=0.7042 test_ndcg=0.7015 | train_rew=83141.218750 test_rew=91688.523438 | loss=12974282.623025 | mem_alloc=1.8G mem_resv=2.1G | elapsed=62.5s ETA=86870s
+2026-06-13 10:08:05,180      set_log [INFO]	Epoch 11/1399 | train_ndcg=0.7010 test_ndcg=0.6989 | train_rew=82543.976562 test_rew=91132.781250 | loss=12411349.671633 | mem_alloc=1.8G mem_resv=2.1G | elapsed=50.7s ETA=70383s
+2026-06-13 10:09:00,735      set_log [INFO]	Epoch 12/1399 | train_ndcg=0.7006 test_ndcg=0.6989 | train_rew=82401.125000 test_rew=91206.742188 | loss=12140540.058662 | mem_alloc=1.8G mem_resv=2.2G | elapsed=55.6s ETA=77049s
+2026-06-13 10:09:56,351      set_log [INFO]	Epoch 13/1399 | train_ndcg=0.7002 test_ndcg=0.6981 | train_rew=82329.382812 test_rew=91155.851562 | loss=12406903.686963 | mem_alloc=1.9G mem_resv=2.3G | elapsed=55.6s ETA=77077s
+2026-06-13 10:10:53,750      set_log [INFO]	Epoch 14/1399 | train_ndcg=0.6999 test_ndcg=0.6980 | train_rew=82350.617188 test_rew=91175.156250 | loss=12414256.649774 | mem_alloc=1.8G mem_resv=2.2G | elapsed=57.4s ETA=79490s
+2026-06-13 10:11:36,707      set_log [INFO]	Epoch 15/1399 | train_ndcg=0.7001 test_ndcg=0.6980 | train_rew=82409.539062 test_rew=91187.476562 | loss=12554969.733358 | mem_alloc=1.8G mem_resv=2.1G | elapsed=43.0s ETA=59445s
+2026-06-13 10:12:21,738      set_log [INFO]	Epoch 16/1399 | train_ndcg=0.7003 test_ndcg=0.6983 | train_rew=82457.921875 test_rew=91220.429688 | loss=12284368.627661 | mem_alloc=1.8G mem_resv=2.2G | elapsed=45.0s ETA=62272s
+2026-06-13 10:13:12,118      set_log [INFO]	Epoch 17/1399 | train_ndcg=0.6999 test_ndcg=0.6976 | train_rew=82337.570312 test_rew=91245.218750 | loss=12598217.395980 | mem_alloc=1.8G mem_resv=2.2G | elapsed=50.4s ETA=69619s
+2026-06-13 10:14:00,719      set_log [INFO]	Epoch 18/1399 | train_ndcg=0.6989 test_ndcg=0.6961 | train_rew=82206.085938 test_rew=90856.531250 | loss=12389850.563965 | mem_alloc=1.9G mem_resv=2.3G | elapsed=48.6s ETA=67110s
+2026-06-13 10:14:45,777      set_log [INFO]	Epoch 19/1399 | train_ndcg=0.6973 test_ndcg=0.6946 | train_rew=82062.625000 test_rew=90626.562500 | loss=11617964.973749 | mem_alloc=1.8G mem_resv=2.2G | elapsed=45.1s ETA=62173s
+2026-06-13 10:15:30,101      set_log [INFO]	Epoch 20/1399 | train_ndcg=0.6952 test_ndcg=0.6926 | train_rew=81299.710938 test_rew=90330.429688 | loss=11810651.225628 | mem_alloc=1.8G mem_resv=2.1G | elapsed=44.3s ETA=61116s
+2026-06-13 10:16:13,853      set_log [INFO]	Epoch 21/1399 | train_ndcg=0.6902 test_ndcg=0.6887 | train_rew=80821.640625 test_rew=89324.492188 | loss=11731729.823196 | mem_alloc=1.8G mem_resv=2.4G | elapsed=43.7s ETA=60285s
+2026-06-13 10:16:58,463      set_log [INFO]	Epoch 22/1399 | train_ndcg=0.6903 test_ndcg=0.6886 | train_rew=80910.226562 test_rew=89405.656250 | loss=11606819.681635 | mem_alloc=1.8G mem_resv=2.3G | elapsed=44.6s ETA=61420s
+2026-06-13 10:17:43,298      set_log [INFO]	Epoch 23/1399 | train_ndcg=0.6822 test_ndcg=0.6819 | train_rew=79695.335938 test_rew=88200.398438 | loss=11216369.009670 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.8s ETA=61685s
+2026-06-13 10:18:27,585      set_log [INFO]	Epoch 24/1399 | train_ndcg=0.6520 test_ndcg=0.6530 | train_rew=74267.601562 test_rew=82367.773438 | loss=10799694.140026 | mem_alloc=1.8G mem_resv=2.3G | elapsed=44.3s ETA=60887s
+2026-06-13 10:19:11,638      set_log [INFO]	Epoch 25/1399 | train_ndcg=0.6506 test_ndcg=0.6510 | train_rew=74258.648438 test_rew=81427.195312 | loss=10284080.291928 | mem_alloc=1.8G mem_resv=2.4G | elapsed=44.0s ETA=60523s
+2026-06-13 10:19:57,040      set_log [INFO]	Epoch 26/1399 | train_ndcg=0.6477 test_ndcg=0.6487 | train_rew=73737.054688 test_rew=80903.140625 | loss=10567873.956303 | mem_alloc=1.8G mem_resv=2.4G | elapsed=45.4s ETA=62330s
+2026-06-13 10:20:41,188      set_log [INFO]	Epoch 27/1399 | train_ndcg=0.6515 test_ndcg=0.6514 | train_rew=74405.445312 test_rew=81507.226562 | loss=10209922.310594 | mem_alloc=1.8G mem_resv=2.3G | elapsed=44.1s ETA=60563s
+2026-06-13 10:21:24,772      set_log [INFO]	Epoch 28/1399 | train_ndcg=0.6478 test_ndcg=0.6502 | train_rew=73570.132812 test_rew=81735.125000 | loss=10886773.564206 | mem_alloc=1.8G mem_resv=2.3G | elapsed=43.6s ETA=59747s
+2026-06-13 10:22:09,669      set_log [INFO]	Epoch 29/1399 | train_ndcg=0.6506 test_ndcg=0.6510 | train_rew=74071.585938 test_rew=81514.218750 | loss=10278907.580435 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.9s ETA=61501s
+2026-06-13 10:22:54,392      set_log [INFO]	Epoch 30/1399 | train_ndcg=0.6488 test_ndcg=0.6504 | train_rew=73928.976562 test_rew=81751.976562 | loss=10032730.310855 | mem_alloc=1.9G mem_resv=2.2G | elapsed=44.7s ETA=61220s
+2026-06-13 10:23:40,480      set_log [INFO]	Epoch 31/1399 | train_ndcg=0.6504 test_ndcg=0.6499 | train_rew=74191.250000 test_rew=81918.445312 | loss=10249930.333800 | mem_alloc=1.8G mem_resv=2.2G | elapsed=46.1s ETA=63041s
+2026-06-13 10:24:24,470      set_log [INFO]	Epoch 32/1399 | train_ndcg=0.6495 test_ndcg=0.6497 | train_rew=73807.429688 test_rew=81183.523438 | loss=10102156.822533 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.0s ETA=60128s
+2026-06-13 10:25:08,648      set_log [INFO]	Epoch 33/1399 | train_ndcg=0.6482 test_ndcg=0.6505 | train_rew=73824.789062 test_rew=81392.218750 | loss=9984848.075406 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.2s ETA=60341s
+2026-06-13 10:25:52,887      set_log [INFO]	Epoch 34/1399 | train_ndcg=0.6482 test_ndcg=0.6484 | train_rew=73168.867188 test_rew=81274.687500 | loss=9934384.591415 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.2s ETA=60378s
+2026-06-13 10:26:36,473      set_log [INFO]	Epoch 35/1399 | train_ndcg=0.6495 test_ndcg=0.6502 | train_rew=73918.914062 test_rew=81474.898438 | loss=9930234.717691 | mem_alloc=1.8G mem_resv=2.1G | elapsed=43.6s ETA=59444s
+2026-06-13 10:27:20,487      set_log [INFO]	Epoch 36/1399 | train_ndcg=0.6539 test_ndcg=0.6499 | train_rew=74329.773438 test_rew=81037.437500 | loss=9852193.532945 | mem_alloc=1.8G mem_resv=2.1G | elapsed=44.0s ETA=59985s
+2026-06-13 10:28:05,008      set_log [INFO]	Epoch 37/1399 | train_ndcg=0.6496 test_ndcg=0.6537 | train_rew=73610.445312 test_rew=81286.539062 | loss=10633842.413480 | mem_alloc=1.8G mem_resv=2.1G | elapsed=44.5s ETA=60632s
+2026-06-13 10:28:49,215      set_log [INFO]	Epoch 38/1399 | train_ndcg=0.6448 test_ndcg=0.6499 | train_rew=73223.273438 test_rew=83347.585938 | loss=10175212.360292 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.2s ETA=60158s
+2026-06-13 10:29:33,731      set_log [INFO]	Epoch 39/1399 | train_ndcg=0.6458 test_ndcg=0.6479 | train_rew=73293.953125 test_rew=80638.953125 | loss=9779334.646906 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.5s ETA=60535s
+2026-06-13 10:30:18,146      set_log [INFO]	Epoch 40/1399 | train_ndcg=0.6448 test_ndcg=0.6452 | train_rew=72873.781250 test_rew=79991.437500 | loss=9719555.595011 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.4s ETA=60352s
+2026-06-13 10:31:01,901      set_log [INFO]	Epoch 41/1399 | train_ndcg=0.6471 test_ndcg=0.6488 | train_rew=73559.976562 test_rew=80679.726562 | loss=9584121.938704 | mem_alloc=1.8G mem_resv=2.2G | elapsed=43.8s ETA=59414s
+2026-06-13 10:31:50,038      set_log [INFO]	Epoch 42/1399 | train_ndcg=0.6483 test_ndcg=0.6477 | train_rew=73753.007812 test_rew=80112.625000 | loss=9892785.533625 | mem_alloc=1.8G mem_resv=2.2G | elapsed=48.1s ETA=65315s
+2026-06-13 10:32:34,118      set_log [INFO]	Epoch 43/1399 | train_ndcg=0.6571 test_ndcg=0.6540 | train_rew=75064.218750 test_rew=82209.335938 | loss=9760868.894601 | mem_alloc=1.8G mem_resv=2.1G | elapsed=44.1s ETA=59765s
+2026-06-13 10:33:19,069      set_log [INFO]	Epoch 44/1399 | train_ndcg=0.6471 test_ndcg=0.6463 | train_rew=73322.304688 test_rew=80718.726562 | loss=9965461.895314 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.9s ETA=60902s
+2026-06-13 10:34:03,475      set_log [INFO]	Epoch 45/1399 | train_ndcg=0.6489 test_ndcg=0.6486 | train_rew=73607.406250 test_rew=80955.976562 | loss=9892852.250462 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.4s ETA=60118s
+2026-06-13 10:34:48,448      set_log [INFO]	Epoch 46/1399 | train_ndcg=0.6468 test_ndcg=0.6485 | train_rew=73133.789062 test_rew=81082.125000 | loss=9688796.073210 | mem_alloc=1.8G mem_resv=2.2G | elapsed=45.0s ETA=60841s
+2026-06-13 10:35:33,048      set_log [INFO]	Epoch 47/1399 | train_ndcg=0.6461 test_ndcg=0.6460 | train_rew=73175.265625 test_rew=80429.718750 | loss=9823979.446222 | mem_alloc=1.8G mem_resv=2.1G | elapsed=44.6s ETA=60293s
+2026-06-13 10:36:17,092      set_log [INFO]	Epoch 48/1399 | train_ndcg=0.6433 test_ndcg=0.6467 | train_rew=73087.664062 test_rew=81736.375000 | loss=10126642.172962 | mem_alloc=1.8G mem_resv=2.1G | elapsed=44.0s ETA=59497s
+2026-06-13 10:37:01,615      set_log [INFO]	Epoch 49/1399 | train_ndcg=0.6462 test_ndcg=0.6469 | train_rew=72800.367188 test_rew=80641.414062 | loss=10589879.623382 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.5s ETA=60100s
+2026-06-13 10:37:46,402      set_log [INFO]	Epoch 50/1399 | train_ndcg=0.6469 test_ndcg=0.6483 | train_rew=73381.398438 test_rew=80701.648438 | loss=9835736.018010 | mem_alloc=1.9G mem_resv=2.2G | elapsed=44.8s ETA=60412s
+2026-06-13 10:38:30,042      set_log [INFO]	Epoch 51/1399 | train_ndcg=0.6509 test_ndcg=0.6479 | train_rew=73733.031250 test_rew=79984.007812 | loss=9171083.491849 | mem_alloc=1.8G mem_resv=2.2G | elapsed=43.6s ETA=58820s
+2026-06-13 10:39:14,178      set_log [INFO]	Epoch 52/1399 | train_ndcg=0.6491 test_ndcg=0.6495 | train_rew=73720.375000 test_rew=80109.664062 | loss=9488985.770891 | mem_alloc=1.8G mem_resv=2.1G | elapsed=44.1s ETA=59446s
+2026-06-13 10:39:59,005      set_log [INFO]	Epoch 53/1399 | train_ndcg=0.6466 test_ndcg=0.6472 | train_rew=73124.718750 test_rew=80272.851562 | loss=9743539.525044 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.8s ETA=60330s
+2026-06-13 10:40:43,699      set_log [INFO]	Epoch 54/1399 | train_ndcg=0.6485 test_ndcg=0.6478 | train_rew=73324.304688 test_rew=80263.078125 | loss=9600477.645032 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.7s ETA=60107s
+2026-06-13 10:40:43,704      set_log [INFO]	Early stopping at epoch 54 — no improvement for 50 epochs (best_ndcg=0.7142)
+2026-06-13 10:40:43,705      set_log [INFO]	=== Training complete — best_ndcg=0.7142 | total elapsed: 2721.4s ===
+for GDSC ALL we are using the Pearson cell-line kernel (769 features)
+num of updates is 8408, num of updates in ppo is 67287, total optimizer steps are 2153184 and num of epochs is 1400
+for a single epoch, it updates 1536 times 
+[2026-06-13 10:40:44]     Fold0 done in 2724s
+[2026-06-13 10:40:44] 
+[2026-06-13 10:40:44]   --- Fold1 ---
+2026-06-13 10:40:46,535      set_log [INFO]	Model Name is ppo_data_GDSC_ALL_FULL_f100__Sraw_B16_D2_C2_Fold1
+2026-06-13 10:40:46,537      set_log [INFO]	Device: cuda:0 | GPU: NVIDIA H100 PCIe | CUDA 12.1
+2026-06-13 10:40:46,538      set_log [INFO]	GPU memory: 85.0 GB total
+2026-06-13 10:40:46,662      set_log [INFO]	GPU memory cap: 47% of total (~40.0 GB) for this process
+2026-06-13 10:40:46,664      set_log [INFO]	model saved directory /home/arianna/projects/PPORank/Saved/ppo_data_GDSC_ALL_FULL_f100__Sraw_B16_D2_C2_Fold1
+2026-06-13 10:40:49,588      set_log [INFO]	Load WP with dimesnion 769,100
+2026-06-13 10:40:49,589      set_log [INFO]	Load drug embedding  with dimesnion 223,100
+2026-06-13 10:40:49,589      set_log [INFO]	Sample size N  is 769, drug size M is 223, cellline features P is 769 with projection dimension is 100
+2026-06-13 10:40:49,590      set_log [INFO]	results saved file name is ./results/data/GDSC_ALL/ppo_data_GDSC_ALL_FULL_f100__Sraw_B16_D2_C2_Fold1_PPOresult.txt
+2026-06-13 10:40:50,185      set_log [INFO]	total params in PPO is 158954
+2026-06-13 10:40:50,232      set_log [INFO]	=== Training started: 1400 epochs, 16 processes, device=cuda:0 ===
+2026-06-13 10:41:48,449      set_log [INFO]	Epoch 0/1399 | train_ndcg=0.7042 test_ndcg=0.7091 | train_rew=84013.023438 test_rew=77688.062500 | loss=10559830.009165 | mem_alloc=1.6G mem_resv=2.2G | elapsed=58.2s ETA=81445s
+2026-06-13 10:42:57,594      set_log [INFO]	Epoch 1/1399 | train_ndcg=0.7077 test_ndcg=0.7154 | train_rew=83934.625000 test_rew=77940.726562 | loss=12948776.576103 | mem_alloc=1.8G mem_resv=2.3G | elapsed=69.1s ETA=96598s
+2026-06-13 10:43:54,746      set_log [INFO]	Epoch 2/1399 | train_ndcg=0.7087 test_ndcg=0.7183 | train_rew=83843.804688 test_rew=78612.117188 | loss=13791944.573738 | mem_alloc=1.8G mem_resv=2.3G | elapsed=57.1s ETA=79786s
+2026-06-13 10:44:44,576      set_log [INFO]	Epoch 3/1399 | train_ndcg=0.7101 test_ndcg=0.7227 | train_rew=84286.664062 test_rew=80761.617188 | loss=13942939.037571 | mem_alloc=1.8G mem_resv=2.4G | elapsed=49.8s ETA=69500s
+2026-06-13 10:45:28,841      set_log [INFO]	Epoch 4/1399 | train_ndcg=0.7088 test_ndcg=0.7204 | train_rew=84043.750000 test_rew=80269.218750 | loss=13251487.657817 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.2s ETA=61690s
+2026-06-13 10:46:14,052      set_log [INFO]	Epoch 5/1399 | train_ndcg=0.7077 test_ndcg=0.7211 | train_rew=84077.117188 test_rew=82788.203125 | loss=14136013.128026 | mem_alloc=1.8G mem_resv=2.3G | elapsed=45.2s ETA=63018s
+2026-06-13 10:48:04,119      set_log [INFO]	Epoch 6/1399 | train_ndcg=0.7073 test_ndcg=0.7152 | train_rew=84013.757812 test_rew=79868.257812 | loss=14626141.081601 | mem_alloc=1.8G mem_resv=2.2G | elapsed=110.1s ETA=153315s
+2026-06-13 10:49:54,063      set_log [INFO]	Epoch 7/1399 | train_ndcg=0.7044 test_ndcg=0.7094 | train_rew=83561.695312 test_rew=79312.367188 | loss=14626221.029353 | mem_alloc=1.8G mem_resv=2.2G | elapsed=109.9s ETA=153035s
+2026-06-13 10:51:46,358      set_log [INFO]	Epoch 8/1399 | train_ndcg=0.7067 test_ndcg=0.7132 | train_rew=84241.750000 test_rew=82174.585938 | loss=14591538.683797 | mem_alloc=1.8G mem_resv=2.1G | elapsed=112.3s ETA=156194s
+2026-06-13 10:53:38,184      set_log [INFO]	Epoch 9/1399 | train_ndcg=0.7083 test_ndcg=0.7142 | train_rew=85698.132812 test_rew=82978.226562 | loss=14828520.281856 | mem_alloc=1.8G mem_resv=2.2G | elapsed=111.8s ETA=155431s
+2026-06-13 10:55:36,589      set_log [INFO]	Epoch 10/1399 | train_ndcg=0.7066 test_ndcg=0.7103 | train_rew=85432.929688 test_rew=81765.750000 | loss=14212145.903124 | mem_alloc=1.8G mem_resv=2.3G | elapsed=118.4s ETA=164454s
+2026-06-13 10:57:31,509      set_log [INFO]	Epoch 11/1399 | train_ndcg=0.7064 test_ndcg=0.7086 | train_rew=86111.914062 test_rew=80407.312500 | loss=14011038.973918 | mem_alloc=1.9G mem_resv=2.4G | elapsed=114.9s ETA=159501s
+2026-06-13 10:59:29,921      set_log [INFO]	Epoch 12/1399 | train_ndcg=0.7058 test_ndcg=0.7073 | train_rew=86162.718750 test_rew=80448.007812 | loss=13468391.164272 | mem_alloc=1.8G mem_resv=2.2G | elapsed=118.4s ETA=164231s
+2026-06-13 11:01:24,445      set_log [INFO]	Epoch 13/1399 | train_ndcg=0.7035 test_ndcg=0.7064 | train_rew=85782.554688 test_rew=80406.414062 | loss=12785297.756440 | mem_alloc=1.8G mem_resv=2.3G | elapsed=114.5s ETA=158722s
+2026-06-13 11:03:14,718      set_log [INFO]	Epoch 14/1399 | train_ndcg=0.7011 test_ndcg=0.7061 | train_rew=85199.773438 test_rew=80200.320312 | loss=12780319.690257 | mem_alloc=1.8G mem_resv=2.3G | elapsed=110.3s ETA=152721s
+2026-06-13 11:05:09,323      set_log [INFO]	Epoch 15/1399 | train_ndcg=0.6936 test_ndcg=0.7032 | train_rew=83485.523438 test_rew=78254.835938 | loss=12251311.651569 | mem_alloc=1.8G mem_resv=2.3G | elapsed=114.6s ETA=158605s
+2026-06-13 11:07:01,953      set_log [INFO]	Epoch 16/1399 | train_ndcg=0.6923 test_ndcg=0.6997 | train_rew=83740.375000 test_rew=77797.992188 | loss=11509184.931808 | mem_alloc=1.8G mem_resv=2.3G | elapsed=112.6s ETA=155759s
+2026-06-13 11:08:50,782      set_log [INFO]	Epoch 17/1399 | train_ndcg=0.6737 test_ndcg=0.6852 | train_rew=80386.257812 test_rew=75168.929688 | loss=11256043.424011 | mem_alloc=1.8G mem_resv=2.3G | elapsed=108.8s ETA=150395s
+2026-06-13 11:10:45,022      set_log [INFO]	Epoch 18/1399 | train_ndcg=0.6715 test_ndcg=0.6847 | train_rew=79782.539062 test_rew=74814.132812 | loss=10939418.950262 | mem_alloc=1.9G mem_resv=2.4G | elapsed=114.2s ETA=157758s
+2026-06-13 11:12:39,106      set_log [INFO]	Epoch 19/1399 | train_ndcg=0.6714 test_ndcg=0.6846 | train_rew=80040.640625 test_rew=75093.273438 | loss=10737012.266562 | mem_alloc=1.8G mem_resv=2.3G | elapsed=114.1s ETA=157427s
+2026-06-13 11:14:32,064      set_log [INFO]	Epoch 20/1399 | train_ndcg=0.6684 test_ndcg=0.6791 | train_rew=79495.664062 test_rew=74447.117188 | loss=10714629.278356 | mem_alloc=1.8G mem_resv=2.3G | elapsed=113.0s ETA=155762s
+2026-06-13 11:16:26,188      set_log [INFO]	Epoch 21/1399 | train_ndcg=0.6639 test_ndcg=0.6736 | train_rew=79101.218750 test_rew=73622.101562 | loss=10637389.949749 | mem_alloc=1.9G mem_resv=2.3G | elapsed=114.1s ETA=157255s
+2026-06-13 11:18:18,629      set_log [INFO]	Epoch 22/1399 | train_ndcg=0.6631 test_ndcg=0.6759 | train_rew=78217.179688 test_rew=73525.507812 | loss=10421471.568234 | mem_alloc=1.8G mem_resv=2.3G | elapsed=112.4s ETA=154823s
+2026-06-13 11:20:11,768      set_log [INFO]	Epoch 23/1399 | train_ndcg=0.6608 test_ndcg=0.6737 | train_rew=77864.960938 test_rew=73147.453125 | loss=10308658.356384 | mem_alloc=1.8G mem_resv=2.1G | elapsed=113.1s ETA=155672s
+2026-06-13 11:22:03,888      set_log [INFO]	Epoch 24/1399 | train_ndcg=0.6627 test_ndcg=0.6730 | train_rew=77730.507812 test_rew=72859.500000 | loss=10450204.218051 | mem_alloc=1.8G mem_resv=2.2G | elapsed=112.1s ETA=154157s
+2026-06-13 11:23:54,374      set_log [INFO]	Epoch 25/1399 | train_ndcg=0.6606 test_ndcg=0.6746 | train_rew=77481.453125 test_rew=72810.984375 | loss=10442389.657340 | mem_alloc=1.8G mem_resv=2.3G | elapsed=110.5s ETA=151799s
+2026-06-13 11:25:44,366      set_log [INFO]	Epoch 26/1399 | train_ndcg=0.6621 test_ndcg=0.6752 | train_rew=77674.742188 test_rew=72981.320312 | loss=10541828.692431 | mem_alloc=1.8G mem_resv=2.3G | elapsed=110.0s ETA=151012s
+2026-06-13 11:27:39,310      set_log [INFO]	Epoch 27/1399 | train_ndcg=0.6573 test_ndcg=0.6688 | train_rew=77224.070312 test_rew=72739.867188 | loss=10672373.915760 | mem_alloc=1.8G mem_resv=2.2G | elapsed=114.9s ETA=157697s
+2026-06-13 11:29:32,948      set_log [INFO]	Epoch 28/1399 | train_ndcg=0.6522 test_ndcg=0.6631 | train_rew=76209.937500 test_rew=71287.242188 | loss=10545942.100635 | mem_alloc=1.9G mem_resv=2.2G | elapsed=113.6s ETA=155790s
+2026-06-13 11:31:25,494      set_log [INFO]	Epoch 29/1399 | train_ndcg=0.6488 test_ndcg=0.6590 | train_rew=75891.171875 test_rew=71129.710938 | loss=10175390.777496 | mem_alloc=1.8G mem_resv=2.2G | elapsed=112.5s ETA=154180s
+2026-06-13 11:33:18,300      set_log [INFO]	Epoch 30/1399 | train_ndcg=0.6443 test_ndcg=0.6542 | train_rew=74779.835938 test_rew=69564.523438 | loss=9864580.947610 | mem_alloc=1.8G mem_resv=2.2G | elapsed=112.8s ETA=154424s
+2026-06-13 11:35:11,521      set_log [INFO]	Epoch 31/1399 | train_ndcg=0.6393 test_ndcg=0.6473 | train_rew=73490.351562 test_rew=68974.984375 | loss=9562593.618076 | mem_alloc=1.8G mem_resv=2.2G | elapsed=113.2s ETA=154878s
+2026-06-13 11:37:02,076      set_log [INFO]	Epoch 32/1399 | train_ndcg=0.6361 test_ndcg=0.6497 | train_rew=73324.656250 test_rew=69231.968750 | loss=9515573.593850 | mem_alloc=1.8G mem_resv=2.2G | elapsed=110.5s ETA=151121s
+2026-06-13 11:38:51,786      set_log [INFO]	Epoch 33/1399 | train_ndcg=0.6375 test_ndcg=0.6446 | train_rew=72986.929688 test_rew=68374.023438 | loss=9244569.355896 | mem_alloc=1.8G mem_resv=2.1G | elapsed=109.7s ETA=149858s
+2026-06-13 11:40:47,144      set_log [INFO]	Epoch 34/1399 | train_ndcg=0.6297 test_ndcg=0.6401 | train_rew=71779.281250 test_rew=67647.210938 | loss=9148791.823319 | mem_alloc=1.8G mem_resv=2.2G | elapsed=115.4s ETA=157455s
+2026-06-13 11:42:38,823      set_log [INFO]	Epoch 35/1399 | train_ndcg=0.6307 test_ndcg=0.6406 | train_rew=71960.898438 test_rew=67304.734375 | loss=9248192.811423 | mem_alloc=1.8G mem_resv=2.2G | elapsed=111.7s ETA=152322s
+2026-06-13 11:44:29,526      set_log [INFO]	Epoch 36/1399 | train_ndcg=0.6278 test_ndcg=0.6357 | train_rew=71756.906250 test_rew=66482.789062 | loss=8891661.635781 | mem_alloc=1.8G mem_resv=2.2G | elapsed=110.7s ETA=150881s
+2026-06-13 11:46:23,806      set_log [INFO]	Epoch 37/1399 | train_ndcg=0.6297 test_ndcg=0.6367 | train_rew=72155.945312 test_rew=67814.281250 | loss=9189982.501934 | mem_alloc=1.8G mem_resv=2.2G | elapsed=114.3s ETA=155643s
+2026-06-13 11:48:15,959      set_log [INFO]	Epoch 38/1399 | train_ndcg=0.6298 test_ndcg=0.6365 | train_rew=72163.195312 test_rew=67332.367188 | loss=8999810.529035 | mem_alloc=1.9G mem_resv=2.4G | elapsed=112.1s ETA=152632s
+2026-06-13 11:50:10,746      set_log [INFO]	Epoch 39/1399 | train_ndcg=0.6291 test_ndcg=0.6376 | train_rew=72333.281250 test_rew=67384.632812 | loss=9076189.160755 | mem_alloc=1.8G mem_resv=2.4G | elapsed=114.8s ETA=156103s
+2026-06-13 11:52:07,743      set_log [INFO]	Epoch 40/1399 | train_ndcg=0.6275 test_ndcg=0.6334 | train_rew=72603.976562 test_rew=67061.984375 | loss=9095220.066642 | mem_alloc=1.8G mem_resv=2.3G | elapsed=117.0s ETA=158990s
+2026-06-13 11:54:03,444      set_log [INFO]	Epoch 41/1399 | train_ndcg=0.6265 test_ndcg=0.6328 | train_rew=71826.351562 test_rew=66872.523438 | loss=8703588.352817 | mem_alloc=1.8G mem_resv=2.2G | elapsed=115.7s ETA=157115s
+2026-06-13 11:55:58,487      set_log [INFO]	Epoch 42/1399 | train_ndcg=0.6230 test_ndcg=0.6322 | train_rew=71111.015625 test_rew=66533.664062 | loss=8657211.882888 | mem_alloc=1.8G mem_resv=2.2G | elapsed=115.0s ETA=156104s
+2026-06-13 11:57:51,708      set_log [INFO]	Epoch 43/1399 | train_ndcg=0.6225 test_ndcg=0.6329 | train_rew=71039.625000 test_rew=66346.710938 | loss=9000639.734785 | mem_alloc=1.8G mem_resv=2.2G | elapsed=113.2s ETA=153520s
+2026-06-13 11:59:44,284      set_log [INFO]	Epoch 44/1399 | train_ndcg=0.6261 test_ndcg=0.6313 | train_rew=71705.039062 test_rew=66864.562500 | loss=9378667.973835 | mem_alloc=1.8G mem_resv=2.2G | elapsed=112.6s ETA=152534s
+2026-06-13 12:01:38,442      set_log [INFO]	Epoch 45/1399 | train_ndcg=0.6200 test_ndcg=0.6292 | train_rew=70905.992188 test_rew=66755.492188 | loss=8935837.201646 | mem_alloc=1.8G mem_resv=2.2G | elapsed=114.2s ETA=154562s
+2026-06-13 12:03:33,886      set_log [INFO]	Epoch 46/1399 | train_ndcg=0.6215 test_ndcg=0.6306 | train_rew=70751.781250 test_rew=66274.804688 | loss=8529973.690114 | mem_alloc=1.8G mem_resv=2.1G | elapsed=115.4s ETA=156188s
+2026-06-13 12:05:26,706      set_log [INFO]	Epoch 47/1399 | train_ndcg=0.6238 test_ndcg=0.6275 | train_rew=71280.429688 test_rew=65925.234375 | loss=8519607.333827 | mem_alloc=1.8G mem_resv=2.1G | elapsed=112.8s ETA=152526s
+2026-06-13 12:07:20,630      set_log [INFO]	Epoch 48/1399 | train_ndcg=0.6242 test_ndcg=0.6272 | train_rew=71507.304688 test_rew=66551.460938 | loss=8523092.487891 | mem_alloc=1.8G mem_resv=2.2G | elapsed=113.9s ETA=153904s
+2026-06-13 12:09:12,057      set_log [INFO]	Epoch 49/1399 | train_ndcg=0.6214 test_ndcg=0.6279 | train_rew=70863.523438 test_rew=65972.085938 | loss=8089645.883443 | mem_alloc=1.9G mem_resv=2.3G | elapsed=111.4s ETA=150419s
+2026-06-13 12:11:05,474      set_log [INFO]	Epoch 50/1399 | train_ndcg=0.6210 test_ndcg=0.6268 | train_rew=70706.218750 test_rew=66270.492188 | loss=8547833.920138 | mem_alloc=1.9G mem_resv=2.4G | elapsed=113.4s ETA=152991s
+2026-06-13 12:12:56,758      set_log [INFO]	Epoch 51/1399 | train_ndcg=0.6197 test_ndcg=0.6295 | train_rew=71406.726562 test_rew=66017.054688 | loss=9748767.150897 | mem_alloc=1.8G mem_resv=2.4G | elapsed=111.3s ETA=150003s
+2026-06-13 12:14:51,015      set_log [INFO]	Epoch 52/1399 | train_ndcg=0.6270 test_ndcg=0.6323 | train_rew=71493.648438 test_rew=66832.828125 | loss=8583009.091099 | mem_alloc=1.8G mem_resv=2.2G | elapsed=114.3s ETA=153897s
+2026-06-13 12:16:42,680      set_log [INFO]	Epoch 53/1399 | train_ndcg=0.6252 test_ndcg=0.6305 | train_rew=70807.679688 test_rew=66046.125000 | loss=8103706.816979 | mem_alloc=1.8G mem_resv=2.2G | elapsed=111.7s ETA=150294s
+2026-06-13 12:16:42,685      set_log [INFO]	Early stopping at epoch 53 — no improvement for 50 epochs (best_ndcg=0.7227)
+2026-06-13 12:16:42,686      set_log [INFO]	=== Training complete — best_ndcg=0.7227 | total elapsed: 5756.2s ===
+for GDSC ALL we are using the Pearson cell-line kernel (769 features)
+num of updates is 8408, num of updates in ppo is 67287, total optimizer steps are 2153184 and num of epochs is 1400
+for a single epoch, it updates 1536 times 
+[2026-06-13 12:16:43]     Fold1 done in 5759s
+[2026-06-13 12:16:43] 
+[2026-06-13 12:16:43]   --- Fold2 ---
+2026-06-13 12:16:45,618      set_log [INFO]	Model Name is ppo_data_GDSC_ALL_FULL_f100__Sraw_B16_D2_C2_Fold2
+2026-06-13 12:16:45,621      set_log [INFO]	Device: cuda:0 | GPU: NVIDIA H100 PCIe | CUDA 12.1
+2026-06-13 12:16:45,621      set_log [INFO]	GPU memory: 85.0 GB total
+2026-06-13 12:16:45,853      set_log [INFO]	GPU memory cap: 47% of total (~40.0 GB) for this process
+2026-06-13 12:16:45,856      set_log [INFO]	model saved directory /home/arianna/projects/PPORank/Saved/ppo_data_GDSC_ALL_FULL_f100__Sraw_B16_D2_C2_Fold2
+2026-06-13 12:16:46,722      set_log [INFO]	Load WP with dimesnion 770,100
+2026-06-13 12:16:46,722      set_log [INFO]	Load drug embedding  with dimesnion 223,100
+2026-06-13 12:16:46,722      set_log [INFO]	Sample size N  is 770, drug size M is 223, cellline features P is 770 with projection dimension is 100
+2026-06-13 12:16:46,723      set_log [INFO]	results saved file name is ./results/data/GDSC_ALL/ppo_data_GDSC_ALL_FULL_f100__Sraw_B16_D2_C2_Fold2_PPOresult.txt
+2026-06-13 12:16:47,402      set_log [INFO]	total params in PPO is 159054
+2026-06-13 12:16:47,460      set_log [INFO]	=== Training started: 1400 epochs, 16 processes, device=cuda:0 ===
+2026-06-13 12:18:40,344      set_log [INFO]	Epoch 0/1399 | train_ndcg=0.6993 test_ndcg=0.6910 | train_rew=82482.023438 test_rew=87304.742188 | loss=9378056.587965 | mem_alloc=1.7G mem_resv=2.2G | elapsed=112.9s ETA=157924s
+2026-06-13 12:20:32,817      set_log [INFO]	Epoch 1/1399 | train_ndcg=0.7064 test_ndcg=0.6981 | train_rew=83860.335938 test_rew=89018.320312 | loss=13983047.447611 | mem_alloc=1.8G mem_resv=2.3G | elapsed=112.4s ETA=157168s
+2026-06-13 12:22:25,096      set_log [INFO]	Epoch 2/1399 | train_ndcg=0.7142 test_ndcg=0.7034 | train_rew=84102.250000 test_rew=89705.156250 | loss=14133533.363679 | mem_alloc=1.8G mem_resv=2.5G | elapsed=112.2s ETA=156798s
+2026-06-13 12:24:17,218      set_log [INFO]	Epoch 3/1399 | train_ndcg=0.7106 test_ndcg=0.6976 | train_rew=84225.335938 test_rew=89110.085938 | loss=14555905.546140 | mem_alloc=1.8G mem_resv=2.2G | elapsed=112.1s ETA=156468s
+2026-06-13 12:26:08,993      set_log [INFO]	Epoch 4/1399 | train_ndcg=0.7149 test_ndcg=0.6983 | train_rew=84105.898438 test_rew=88273.570312 | loss=13452626.652115 | mem_alloc=1.8G mem_resv=2.4G | elapsed=111.8s ETA=155918s
+2026-06-13 12:28:03,021      set_log [INFO]	Epoch 5/1399 | train_ndcg=0.7130 test_ndcg=0.6995 | train_rew=84497.382812 test_rew=88301.531250 | loss=13389033.111564 | mem_alloc=1.8G mem_resv=2.3G | elapsed=114.0s ETA=158949s
+2026-06-13 12:29:55,697      set_log [INFO]	Epoch 6/1399 | train_ndcg=0.7108 test_ndcg=0.6976 | train_rew=83745.554688 test_rew=87996.312500 | loss=13718412.423731 | mem_alloc=1.8G mem_resv=2.4G | elapsed=112.7s ETA=156950s
+2026-06-13 12:31:49,276      set_log [INFO]	Epoch 7/1399 | train_ndcg=0.7090 test_ndcg=0.6975 | train_rew=83519.039062 test_rew=88067.085938 | loss=12867302.249464 | mem_alloc=1.8G mem_resv=2.4G | elapsed=113.6s ETA=158094s
+2026-06-13 12:33:43,440      set_log [INFO]	Epoch 8/1399 | train_ndcg=0.7029 test_ndcg=0.6877 | train_rew=82108.195312 test_rew=86163.132812 | loss=13032688.917543 | mem_alloc=1.8G mem_resv=2.3G | elapsed=114.2s ETA=158794s
+2026-06-13 12:35:33,832      set_log [INFO]	Epoch 9/1399 | train_ndcg=0.7076 test_ndcg=0.6911 | train_rew=83137.554688 test_rew=86546.492188 | loss=12970829.208238 | mem_alloc=1.8G mem_resv=2.3G | elapsed=110.4s ETA=153437s
+2026-06-13 12:37:27,734      set_log [INFO]	Epoch 10/1399 | train_ndcg=0.7068 test_ndcg=0.6920 | train_rew=83503.992188 test_rew=86603.187500 | loss=13292138.226261 | mem_alloc=1.8G mem_resv=2.2G | elapsed=113.9s ETA=158202s
+2026-06-13 12:39:22,491      set_log [INFO]	Epoch 11/1399 | train_ndcg=0.7085 test_ndcg=0.6963 | train_rew=83752.304688 test_rew=87200.445312 | loss=13149277.923818 | mem_alloc=1.9G mem_resv=2.5G | elapsed=114.8s ETA=159275s
+2026-06-13 12:41:16,862      set_log [INFO]	Epoch 12/1399 | train_ndcg=0.7064 test_ndcg=0.6931 | train_rew=83399.281250 test_rew=86859.054688 | loss=13407596.971411 | mem_alloc=1.8G mem_resv=2.3G | elapsed=114.4s ETA=158625s
+2026-06-13 12:43:12,195      set_log [INFO]	Epoch 13/1399 | train_ndcg=0.7043 test_ndcg=0.6911 | train_rew=83049.570312 test_rew=86359.382812 | loss=13274110.038357 | mem_alloc=1.8G mem_resv=2.2G | elapsed=115.3s ETA=159843s
+2026-06-13 12:45:07,744      set_log [INFO]	Epoch 14/1399 | train_ndcg=0.7022 test_ndcg=0.6931 | train_rew=82880.742188 test_rew=86733.812500 | loss=13321674.067486 | mem_alloc=1.8G mem_resv=2.2G | elapsed=115.5s ETA=160028s
+2026-06-13 12:47:00,711      set_log [INFO]	Epoch 15/1399 | train_ndcg=0.7014 test_ndcg=0.6900 | train_rew=82798.539062 test_rew=86413.414062 | loss=13403684.951106 | mem_alloc=1.9G mem_resv=2.4G | elapsed=113.0s ETA=156338s
+2026-06-13 12:48:52,280      set_log [INFO]	Epoch 16/1399 | train_ndcg=0.6998 test_ndcg=0.6890 | train_rew=82408.382812 test_rew=86101.890625 | loss=13329140.073137 | mem_alloc=1.7G mem_resv=2.1G | elapsed=111.6s ETA=154292s
+2026-06-13 12:50:42,973      set_log [INFO]	Epoch 17/1399 | train_ndcg=0.6967 test_ndcg=0.6889 | train_rew=81678.312500 test_rew=85824.710938 | loss=13262452.615173 | mem_alloc=1.8G mem_resv=2.2G | elapsed=110.7s ETA=152970s
+2026-06-13 12:52:37,055      set_log [INFO]	Epoch 18/1399 | train_ndcg=0.6972 test_ndcg=0.6877 | train_rew=81827.195312 test_rew=85760.718750 | loss=13352588.677281 | mem_alloc=1.8G mem_resv=2.2G | elapsed=114.1s ETA=157539s
+2026-06-13 12:54:31,155      set_log [INFO]	Epoch 19/1399 | train_ndcg=0.6927 test_ndcg=0.6840 | train_rew=81293.789062 test_rew=84909.187500 | loss=13101827.583751 | mem_alloc=1.8G mem_resv=2.2G | elapsed=114.1s ETA=157451s
+2026-06-13 12:56:24,811      set_log [INFO]	Epoch 20/1399 | train_ndcg=0.6822 test_ndcg=0.6765 | train_rew=79113.632812 test_rew=83662.500000 | loss=13066242.860565 | mem_alloc=1.8G mem_resv=2.2G | elapsed=113.7s ETA=156724s
+2026-06-13 12:58:16,121      set_log [INFO]	Epoch 21/1399 | train_ndcg=0.6900 test_ndcg=0.6838 | train_rew=80710.554688 test_rew=85146.835938 | loss=12401900.440361 | mem_alloc=1.8G mem_resv=2.2G | elapsed=111.3s ETA=153378s
+2026-06-13 13:00:11,661      set_log [INFO]	Epoch 22/1399 | train_ndcg=0.6921 test_ndcg=0.6843 | train_rew=80933.085938 test_rew=85408.117188 | loss=13654152.217901 | mem_alloc=1.8G mem_resv=2.2G | elapsed=115.5s ETA=159091s
+2026-06-13 13:00:56,722      set_log [INFO]	Epoch 23/1399 | train_ndcg=0.6954 test_ndcg=0.6880 | train_rew=81620.750000 test_rew=86015.226562 | loss=12112531.949607 | mem_alloc=1.8G mem_resv=2.2G | elapsed=45.1s ETA=61996s
+2026-06-13 13:01:40,745      set_log [INFO]	Epoch 24/1399 | train_ndcg=0.6961 test_ndcg=0.6870 | train_rew=81360.781250 test_rew=85540.476562 | loss=13130060.533096 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.0s ETA=60524s
+2026-06-13 13:02:24,077      set_log [INFO]	Epoch 25/1399 | train_ndcg=0.6919 test_ndcg=0.6841 | train_rew=80837.296875 test_rew=85287.117188 | loss=12120966.970084 | mem_alloc=1.8G mem_resv=2.2G | elapsed=43.3s ETA=59532s
+2026-06-13 13:03:07,786      set_log [INFO]	Epoch 26/1399 | train_ndcg=0.6947 test_ndcg=0.6869 | train_rew=80950.218750 test_rew=85873.992188 | loss=12612799.972405 | mem_alloc=1.8G mem_resv=2.3G | elapsed=43.7s ETA=60005s
+2026-06-13 13:03:53,278      set_log [INFO]	Epoch 27/1399 | train_ndcg=0.6853 test_ndcg=0.6721 | train_rew=80379.437500 test_rew=84193.585938 | loss=12312654.563324 | mem_alloc=1.8G mem_resv=2.3G | elapsed=45.5s ETA=62407s
+2026-06-13 13:04:38,430      set_log [INFO]	Epoch 28/1399 | train_ndcg=0.6819 test_ndcg=0.6735 | train_rew=79761.679688 test_rew=84171.804688 | loss=12404068.381388 | mem_alloc=1.8G mem_resv=2.2G | elapsed=45.1s ETA=61897s
+2026-06-13 13:05:23,954      set_log [INFO]	Epoch 29/1399 | train_ndcg=0.6816 test_ndcg=0.6734 | train_rew=79686.117188 test_rew=84261.296875 | loss=12045875.498994 | mem_alloc=1.9G mem_resv=2.3G | elapsed=45.5s ETA=62361s
+2026-06-13 13:06:08,290      set_log [INFO]	Epoch 30/1399 | train_ndcg=0.6840 test_ndcg=0.6782 | train_rew=79407.718750 test_rew=84247.734375 | loss=12222304.802328 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.3s ETA=60690s
+2026-06-13 13:06:52,623      set_log [INFO]	Epoch 31/1399 | train_ndcg=0.6880 test_ndcg=0.6787 | train_rew=80941.429688 test_rew=84596.085938 | loss=12581689.024053 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.3s ETA=60640s
+2026-06-13 13:07:37,401      set_log [INFO]	Epoch 32/1399 | train_ndcg=0.6780 test_ndcg=0.6747 | train_rew=78242.500000 test_rew=83411.132812 | loss=11401357.989887 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.8s ETA=61204s
+2026-06-13 13:08:21,457      set_log [INFO]	Epoch 33/1399 | train_ndcg=0.6773 test_ndcg=0.6644 | train_rew=78247.484375 test_rew=82629.562500 | loss=11046722.061920 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.1s ETA=60175s
+2026-06-13 13:09:05,835      set_log [INFO]	Epoch 34/1399 | train_ndcg=0.6782 test_ndcg=0.6745 | train_rew=78608.437500 test_rew=84454.828125 | loss=11109945.781735 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.4s ETA=60569s
+2026-06-13 13:09:49,730      set_log [INFO]	Epoch 35/1399 | train_ndcg=0.6791 test_ndcg=0.6710 | train_rew=79530.718750 test_rew=84755.523438 | loss=11077873.594180 | mem_alloc=1.8G mem_resv=2.2G | elapsed=43.9s ETA=59865s
+2026-06-13 13:10:34,698      set_log [INFO]	Epoch 36/1399 | train_ndcg=0.6822 test_ndcg=0.6753 | train_rew=79663.664062 test_rew=84340.718750 | loss=12495471.855493 | mem_alloc=1.8G mem_resv=2.2G | elapsed=45.0s ETA=61286s
+2026-06-13 13:11:19,996      set_log [INFO]	Epoch 37/1399 | train_ndcg=0.6822 test_ndcg=0.6745 | train_rew=79248.132812 test_rew=84717.601562 | loss=11654017.320040 | mem_alloc=1.8G mem_resv=2.1G | elapsed=45.3s ETA=61689s
+2026-06-13 13:12:03,436      set_log [INFO]	Epoch 38/1399 | train_ndcg=0.6830 test_ndcg=0.6758 | train_rew=80151.531250 test_rew=84953.335938 | loss=12217976.921767 | mem_alloc=1.8G mem_resv=2.2G | elapsed=43.4s ETA=59114s
+2026-06-13 13:12:48,035      set_log [INFO]	Epoch 39/1399 | train_ndcg=0.6728 test_ndcg=0.6695 | train_rew=77917.226562 test_rew=84163.625000 | loss=12402754.535811 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.6s ETA=60649s
+2026-06-13 13:13:32,189      set_log [INFO]	Epoch 40/1399 | train_ndcg=0.6789 test_ndcg=0.6748 | train_rew=79090.539062 test_rew=84127.773438 | loss=12403955.115044 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.1s ETA=59999s
+2026-06-13 13:14:17,461      set_log [INFO]	Epoch 41/1399 | train_ndcg=0.6768 test_ndcg=0.6741 | train_rew=78815.867188 test_rew=84294.023438 | loss=11254923.643408 | mem_alloc=1.8G mem_resv=2.2G | elapsed=45.3s ETA=61472s
+2026-06-13 13:15:02,014      set_log [INFO]	Epoch 42/1399 | train_ndcg=0.6809 test_ndcg=0.6736 | train_rew=79869.179688 test_rew=84512.062500 | loss=12348671.246287 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.5s ETA=60452s
+2026-06-13 13:15:46,518      set_log [INFO]	Epoch 43/1399 | train_ndcg=0.6752 test_ndcg=0.6708 | train_rew=78872.250000 test_rew=83291.921875 | loss=12364413.280397 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.5s ETA=60341s
+2026-06-13 13:16:29,968      set_log [INFO]	Epoch 44/1399 | train_ndcg=0.6809 test_ndcg=0.6731 | train_rew=79307.851562 test_rew=84314.203125 | loss=12577217.406501 | mem_alloc=1.7G mem_resv=2.1G | elapsed=43.4s ETA=58868s
+2026-06-13 13:17:13,843      set_log [INFO]	Epoch 45/1399 | train_ndcg=0.6752 test_ndcg=0.6706 | train_rew=75700.781250 test_rew=82326.960938 | loss=12215345.108222 | mem_alloc=1.8G mem_resv=2.1G | elapsed=43.9s ETA=59400s
+2026-06-13 13:17:58,142      set_log [INFO]	Epoch 46/1399 | train_ndcg=0.6757 test_ndcg=0.6679 | train_rew=78771.289062 test_rew=83454.382812 | loss=11887156.068296 | mem_alloc=1.9G mem_resv=2.2G | elapsed=44.3s ETA=59928s
+2026-06-13 13:18:42,952      set_log [INFO]	Epoch 47/1399 | train_ndcg=0.6797 test_ndcg=0.6738 | train_rew=79446.054688 test_rew=84481.554688 | loss=12758995.054977 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.8s ETA=60576s
+2026-06-13 13:19:27,022      set_log [INFO]	Epoch 48/1399 | train_ndcg=0.6686 test_ndcg=0.6602 | train_rew=77341.539062 test_rew=82561.968750 | loss=12733917.570163 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.1s ETA=59532s
+2026-06-13 13:20:10,793      set_log [INFO]	Epoch 49/1399 | train_ndcg=0.6749 test_ndcg=0.6702 | train_rew=78932.546875 test_rew=84129.742188 | loss=12180346.036711 | mem_alloc=1.8G mem_resv=2.2G | elapsed=43.8s ETA=59084s
+2026-06-13 13:20:55,366      set_log [INFO]	Epoch 50/1399 | train_ndcg=0.6749 test_ndcg=0.6707 | train_rew=78701.000000 test_rew=83852.554688 | loss=12347150.304458 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.6s ETA=60121s
+2026-06-13 13:21:40,053      set_log [INFO]	Epoch 51/1399 | train_ndcg=0.6837 test_ndcg=0.6749 | train_rew=80436.976562 test_rew=84842.289062 | loss=12294077.758836 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.7s ETA=60232s
+2026-06-13 13:22:24,888      set_log [INFO]	Epoch 52/1399 | train_ndcg=0.6781 test_ndcg=0.6769 | train_rew=79337.734375 test_rew=84576.781250 | loss=12261038.862212 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.8s ETA=60385s
+2026-06-13 13:22:24,893      set_log [INFO]	Early stopping at epoch 52 — no improvement for 50 epochs (best_ndcg=0.7034)
+2026-06-13 13:22:24,894      set_log [INFO]	=== Training complete — best_ndcg=0.7034 | total elapsed: 3939.3s ===
+num of updates is 8408, num of updates in ppo is 67375, total optimizer steps are 2156000 and num of epochs is 1400
+for a single epoch, it updates 1536 times 
+[2026-06-13 13:22:25]     Fold2 done in 3942s
+[2026-06-13 13:22:25] 
+[2026-06-13 13:22:25]   --- Fold3 ---
+2026-06-13 13:22:27,760      set_log [INFO]	Model Name is ppo_data_GDSC_ALL_FULL_f100__Sraw_B16_D2_C2_Fold3
+2026-06-13 13:22:27,763      set_log [INFO]	Device: cuda:0 | GPU: NVIDIA H100 PCIe | CUDA 12.1
+2026-06-13 13:22:27,763      set_log [INFO]	GPU memory: 85.0 GB total
+2026-06-13 13:22:27,893      set_log [INFO]	GPU memory cap: 47% of total (~40.0 GB) for this process
+2026-06-13 13:22:27,894      set_log [INFO]	model saved directory /home/arianna/projects/PPORank/Saved/ppo_data_GDSC_ALL_FULL_f100__Sraw_B16_D2_C2_Fold3
+2026-06-13 13:22:30,546      set_log [INFO]	Load WP with dimesnion 770,100
+2026-06-13 13:22:30,547      set_log [INFO]	Load drug embedding  with dimesnion 223,100
+2026-06-13 13:22:30,547      set_log [INFO]	Sample size N  is 770, drug size M is 223, cellline features P is 770 with projection dimension is 100
+2026-06-13 13:22:30,548      set_log [INFO]	results saved file name is ./results/data/GDSC_ALL/ppo_data_GDSC_ALL_FULL_f100__Sraw_B16_D2_C2_Fold3_PPOresult.txt
+2026-06-13 13:22:31,147      set_log [INFO]	total params in PPO is 159054
+2026-06-13 13:22:31,192      set_log [INFO]	=== Training started: 1400 epochs, 16 processes, device=cuda:0 ===
+2026-06-13 13:23:17,199      set_log [INFO]	Epoch 0/1399 | train_ndcg=0.7135 test_ndcg=0.7111 | train_rew=88544.789062 test_rew=87609.125000 | loss=12175244.484960 | mem_alloc=1.7G mem_resv=2.2G | elapsed=46.0s ETA=64362s
+2026-06-13 13:24:03,408      set_log [INFO]	Epoch 1/1399 | train_ndcg=0.7261 test_ndcg=0.7247 | train_rew=90281.937500 test_rew=88624.562500 | loss=16422441.330106 | mem_alloc=1.9G mem_resv=2.3G | elapsed=46.2s ETA=64528s
+2026-06-13 13:24:46,931      set_log [INFO]	Epoch 2/1399 | train_ndcg=0.7244 test_ndcg=0.7242 | train_rew=89681.585938 test_rew=87116.007812 | loss=17838235.869209 | mem_alloc=1.8G mem_resv=2.3G | elapsed=43.5s ETA=60739s
+2026-06-13 13:25:31,789      set_log [INFO]	Epoch 3/1399 | train_ndcg=0.7202 test_ndcg=0.7211 | train_rew=88137.101562 test_rew=85830.312500 | loss=16620311.724887 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.9s ETA=62615s
+2026-06-13 13:26:16,662      set_log [INFO]	Epoch 4/1399 | train_ndcg=0.7165 test_ndcg=0.7188 | train_rew=87378.851562 test_rew=85025.679688 | loss=16039337.386624 | mem_alloc=1.8G mem_resv=2.3G | elapsed=44.9s ETA=62590s
+2026-06-13 13:27:01,893      set_log [INFO]	Epoch 5/1399 | train_ndcg=0.7124 test_ndcg=0.7142 | train_rew=86054.414062 test_rew=84217.203125 | loss=15656529.494315 | mem_alloc=1.8G mem_resv=2.2G | elapsed=45.2s ETA=63046s
+2026-06-13 13:27:46,722      set_log [INFO]	Epoch 6/1399 | train_ndcg=0.7116 test_ndcg=0.7118 | train_rew=85896.906250 test_rew=83857.320312 | loss=14529444.596704 | mem_alloc=1.8G mem_resv=2.3G | elapsed=44.8s ETA=62439s
+2026-06-13 13:28:31,160      set_log [INFO]	Epoch 7/1399 | train_ndcg=0.7076 test_ndcg=0.7085 | train_rew=85226.531250 test_rew=83528.851562 | loss=14235414.972371 | mem_alloc=1.8G mem_resv=2.1G | elapsed=44.4s ETA=61848s
+2026-06-13 13:29:16,122      set_log [INFO]	Epoch 8/1399 | train_ndcg=0.7043 test_ndcg=0.7057 | train_rew=83895.656250 test_rew=83221.226562 | loss=13651360.307913 | mem_alloc=1.8G mem_resv=2.2G | elapsed=45.0s ETA=62535s
+2026-06-13 13:30:00,528      set_log [INFO]	Epoch 9/1399 | train_ndcg=0.7010 test_ndcg=0.7028 | train_rew=84216.750000 test_rew=82758.960938 | loss=12873492.487646 | mem_alloc=1.8G mem_resv=2.3G | elapsed=44.4s ETA=61716s
+2026-06-13 13:30:44,215      set_log [INFO]	Epoch 10/1399 | train_ndcg=0.6989 test_ndcg=0.6969 | train_rew=83456.625000 test_rew=81793.039062 | loss=12567819.472368 | mem_alloc=1.7G mem_resv=2.1G | elapsed=43.7s ETA=60674s
+2026-06-13 13:31:29,457      set_log [INFO]	Epoch 11/1399 | train_ndcg=0.6935 test_ndcg=0.6909 | train_rew=82433.789062 test_rew=80809.867188 | loss=12324992.981921 | mem_alloc=1.8G mem_resv=2.2G | elapsed=45.2s ETA=62789s
+2026-06-13 13:32:14,692      set_log [INFO]	Epoch 12/1399 | train_ndcg=0.6753 test_ndcg=0.6714 | train_rew=78795.039062 test_rew=76564.664062 | loss=11972801.050343 | mem_alloc=1.8G mem_resv=2.2G | elapsed=45.2s ETA=62734s
+2026-06-13 13:32:58,755      set_log [INFO]	Epoch 13/1399 | train_ndcg=0.6577 test_ndcg=0.6540 | train_rew=75939.835938 test_rew=73695.062500 | loss=11231268.472932 | mem_alloc=1.7G mem_resv=2.2G | elapsed=44.1s ETA=61065s
+2026-06-13 13:33:43,201      set_log [INFO]	Epoch 14/1399 | train_ndcg=0.6565 test_ndcg=0.6523 | train_rew=75722.273438 test_rew=73557.890625 | loss=11137912.409514 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.4s ETA=61551s
+2026-06-13 13:34:27,633      set_log [INFO]	Epoch 15/1399 | train_ndcg=0.6521 test_ndcg=0.6475 | train_rew=74791.804688 test_rew=72999.648438 | loss=11070144.490947 | mem_alloc=1.8G mem_resv=2.1G | elapsed=44.4s ETA=61487s
+2026-06-13 13:35:12,643      set_log [INFO]	Epoch 16/1399 | train_ndcg=0.6477 test_ndcg=0.6436 | train_rew=74342.117188 test_rew=72491.171875 | loss=10735272.970130 | mem_alloc=1.8G mem_resv=2.2G | elapsed=45.0s ETA=62242s
+2026-06-13 13:35:56,338      set_log [INFO]	Epoch 17/1399 | train_ndcg=0.6430 test_ndcg=0.6384 | train_rew=73722.671875 test_rew=71497.835938 | loss=10776489.742092 | mem_alloc=1.7G mem_resv=2.1G | elapsed=43.7s ETA=60379s
+2026-06-13 13:36:40,953      set_log [INFO]	Epoch 18/1399 | train_ndcg=0.6386 test_ndcg=0.6346 | train_rew=73447.093750 test_rew=71096.531250 | loss=10759173.412754 | mem_alloc=1.7G mem_resv=2.1G | elapsed=44.6s ETA=61607s
+2026-06-13 13:37:24,345      set_log [INFO]	Epoch 19/1399 | train_ndcg=0.6384 test_ndcg=0.6340 | train_rew=73506.789062 test_rew=71137.140625 | loss=10755334.739584 | mem_alloc=1.8G mem_resv=2.1G | elapsed=43.4s ETA=59874s
+2026-06-13 13:38:09,747      set_log [INFO]	Epoch 20/1399 | train_ndcg=0.6380 test_ndcg=0.6341 | train_rew=73322.992188 test_rew=71233.390625 | loss=10904839.365062 | mem_alloc=1.8G mem_resv=2.2G | elapsed=45.4s ETA=62604s
+2026-06-13 13:38:54,835      set_log [INFO]	Epoch 21/1399 | train_ndcg=0.6380 test_ndcg=0.6344 | train_rew=73649.203125 test_rew=71305.429688 | loss=10422990.042243 | mem_alloc=1.8G mem_resv=2.3G | elapsed=45.1s ETA=62124s
+2026-06-13 13:39:39,332      set_log [INFO]	Epoch 22/1399 | train_ndcg=0.6382 test_ndcg=0.6345 | train_rew=73596.437500 test_rew=71276.914062 | loss=10701639.648975 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.5s ETA=61266s
+2026-06-13 13:40:25,044      set_log [INFO]	Epoch 23/1399 | train_ndcg=0.6393 test_ndcg=0.6357 | train_rew=73598.476562 test_rew=71390.875000 | loss=10582687.351648 | mem_alloc=1.8G mem_resv=2.2G | elapsed=45.7s ETA=62892s
+2026-06-13 13:41:10,368      set_log [INFO]	Epoch 24/1399 | train_ndcg=0.6396 test_ndcg=0.6351 | train_rew=73768.367188 test_rew=71313.335938 | loss=10596479.171985 | mem_alloc=1.8G mem_resv=2.2G | elapsed=45.3s ETA=62313s
+2026-06-13 13:41:53,407      set_log [INFO]	Epoch 25/1399 | train_ndcg=0.6351 test_ndcg=0.6306 | train_rew=73060.406250 test_rew=70551.210938 | loss=10655520.019240 | mem_alloc=1.8G mem_resv=2.1G | elapsed=43.0s ETA=59129s
+2026-06-13 13:42:38,252      set_log [INFO]	Epoch 26/1399 | train_ndcg=0.6339 test_ndcg=0.6299 | train_rew=72959.179688 test_rew=70567.101562 | loss=10618900.631900 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.8s ETA=61566s
+2026-06-13 13:43:22,928      set_log [INFO]	Epoch 27/1399 | train_ndcg=0.6332 test_ndcg=0.6292 | train_rew=72833.453125 test_rew=70342.085938 | loss=10057709.551025 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.7s ETA=61287s
+2026-06-13 13:44:07,792      set_log [INFO]	Epoch 28/1399 | train_ndcg=0.6345 test_ndcg=0.6311 | train_rew=72597.773438 test_rew=70566.203125 | loss=10063641.027522 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.9s ETA=61501s
+2026-06-13 13:44:52,288      set_log [INFO]	Epoch 29/1399 | train_ndcg=0.6336 test_ndcg=0.6299 | train_rew=72867.398438 test_rew=70401.078125 | loss=9917503.372849 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.5s ETA=60951s
+2026-06-13 13:45:36,758      set_log [INFO]	Epoch 30/1399 | train_ndcg=0.6338 test_ndcg=0.6299 | train_rew=72659.648438 test_rew=70279.320312 | loss=10233780.727831 | mem_alloc=1.8G mem_resv=2.1G | elapsed=44.5s ETA=60873s
+2026-06-13 13:46:20,737      set_log [INFO]	Epoch 31/1399 | train_ndcg=0.6327 test_ndcg=0.6288 | train_rew=72477.132812 test_rew=70068.835938 | loss=9906573.628458 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.0s ETA=60157s
+2026-06-13 13:47:06,015      set_log [INFO]	Epoch 32/1399 | train_ndcg=0.6318 test_ndcg=0.6285 | train_rew=72559.101562 test_rew=69904.632812 | loss=9708719.163119 | mem_alloc=1.8G mem_resv=2.2G | elapsed=45.3s ETA=61887s
+2026-06-13 13:47:50,323      set_log [INFO]	Epoch 33/1399 | train_ndcg=0.6394 test_ndcg=0.6368 | train_rew=73466.609375 test_rew=71568.414062 | loss=9948519.059397 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.3s ETA=60519s
+2026-06-13 13:48:36,574      set_log [INFO]	Epoch 34/1399 | train_ndcg=0.6410 test_ndcg=0.6387 | train_rew=73829.976562 test_rew=71894.726562 | loss=10170830.254701 | mem_alloc=1.8G mem_resv=2.2G | elapsed=46.2s ETA=63126s
+2026-06-13 13:49:22,025      set_log [INFO]	Epoch 35/1399 | train_ndcg=0.6446 test_ndcg=0.6423 | train_rew=74699.289062 test_rew=72763.804688 | loss=10033526.336262 | mem_alloc=1.8G mem_resv=2.3G | elapsed=45.4s ETA=61988s
+2026-06-13 13:50:05,767      set_log [INFO]	Epoch 36/1399 | train_ndcg=0.6391 test_ndcg=0.6359 | train_rew=73473.929688 test_rew=71076.570312 | loss=10223269.196253 | mem_alloc=1.8G mem_resv=2.3G | elapsed=43.7s ETA=59612s
+2026-06-13 13:50:50,183      set_log [INFO]	Epoch 37/1399 | train_ndcg=0.6415 test_ndcg=0.6394 | train_rew=73434.648438 test_rew=71778.085938 | loss=10125095.162179 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.4s ETA=60488s
+2026-06-13 13:51:34,422      set_log [INFO]	Epoch 38/1399 | train_ndcg=0.6395 test_ndcg=0.6377 | train_rew=73315.031250 test_rew=71601.664062 | loss=9594871.376734 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.2s ETA=60203s
+2026-06-13 13:52:19,888      set_log [INFO]	Epoch 39/1399 | train_ndcg=0.6357 test_ndcg=0.6326 | train_rew=72842.867188 test_rew=70726.320312 | loss=9947172.093646 | mem_alloc=1.8G mem_resv=2.2G | elapsed=45.5s ETA=61827s
+2026-06-13 13:53:04,048      set_log [INFO]	Epoch 40/1399 | train_ndcg=0.6369 test_ndcg=0.6336 | train_rew=72779.687500 test_rew=70849.531250 | loss=9841676.747561 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.2s ETA=60006s
+2026-06-13 13:53:48,876      set_log [INFO]	Epoch 41/1399 | train_ndcg=0.6357 test_ndcg=0.6327 | train_rew=72757.312500 test_rew=70705.421875 | loss=10127938.472726 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.8s ETA=60870s
+2026-06-13 13:54:32,539      set_log [INFO]	Epoch 42/1399 | train_ndcg=0.6360 test_ndcg=0.6318 | train_rew=72546.429688 test_rew=70467.101562 | loss=9805891.293189 | mem_alloc=1.8G mem_resv=2.2G | elapsed=43.7s ETA=59243s
+2026-06-13 13:55:16,731      set_log [INFO]	Epoch 43/1399 | train_ndcg=0.6366 test_ndcg=0.6326 | train_rew=72737.945312 test_rew=70501.992188 | loss=9812231.283855 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.2s ETA=59917s
+2026-06-13 13:56:09,563      set_log [INFO]	Epoch 44/1399 | train_ndcg=0.6317 test_ndcg=0.6282 | train_rew=72354.695312 test_rew=70062.617188 | loss=9804045.259440 | mem_alloc=1.8G mem_resv=2.2G | elapsed=52.8s ETA=71581s
+2026-06-13 13:57:56,771      set_log [INFO]	Epoch 45/1399 | train_ndcg=0.6279 test_ndcg=0.6230 | train_rew=71447.054688 test_rew=69204.523438 | loss=9854406.544441 | mem_alloc=1.8G mem_resv=2.2G | elapsed=107.2s ETA=145152s
+2026-06-13 13:59:51,298      set_log [INFO]	Epoch 46/1399 | train_ndcg=0.6288 test_ndcg=0.6240 | train_rew=72362.679688 test_rew=69414.664062 | loss=10326148.937509 | mem_alloc=1.8G mem_resv=2.2G | elapsed=114.5s ETA=154948s
+2026-06-13 14:01:42,998      set_log [INFO]	Epoch 47/1399 | train_ndcg=0.6291 test_ndcg=0.6246 | train_rew=72020.632812 test_rew=69493.281250 | loss=10278041.620173 | mem_alloc=1.8G mem_resv=2.2G | elapsed=111.7s ETA=151011s
+2026-06-13 14:03:36,516      set_log [INFO]	Epoch 48/1399 | train_ndcg=0.6290 test_ndcg=0.6245 | train_rew=72046.968750 test_rew=69554.789062 | loss=10581285.822304 | mem_alloc=1.8G mem_resv=2.2G | elapsed=113.5s ETA=153355s
+2026-06-13 14:05:27,363      set_log [INFO]	Epoch 49/1399 | train_ndcg=0.6313 test_ndcg=0.6264 | train_rew=72461.992188 test_rew=69791.460938 | loss=10088491.001171 | mem_alloc=1.8G mem_resv=2.2G | elapsed=110.8s ETA=149637s
+2026-06-13 14:07:20,582      set_log [INFO]	Epoch 50/1399 | train_ndcg=0.6319 test_ndcg=0.6273 | train_rew=72201.976562 test_rew=69942.515625 | loss=10315934.251339 | mem_alloc=1.8G mem_resv=2.2G | elapsed=113.2s ETA=152724s
+2026-06-13 14:09:12,658      set_log [INFO]	Epoch 51/1399 | train_ndcg=0.6286 test_ndcg=0.6229 | train_rew=72574.726562 test_rew=69795.023438 | loss=10201652.071321 | mem_alloc=1.8G mem_resv=2.2G | elapsed=112.1s ETA=151071s
+2026-06-13 14:09:12,664      set_log [INFO]	Early stopping at epoch 51 — no improvement for 50 epochs (best_ndcg=0.7247)
+2026-06-13 14:09:12,664      set_log [INFO]	=== Training complete — best_ndcg=0.7247 | total elapsed: 2804.9s ===
+num of updates is 8408, num of updates in ppo is 67375, total optimizer steps are 2156000 and num of epochs is 1400
+for a single epoch, it updates 1536 times 
+[2026-06-13 14:09:13]     Fold3 done in 2808s
+[2026-06-13 14:09:13] 
+[2026-06-13 14:09:13]   --- Fold4 ---
+2026-06-13 14:09:15,370      set_log [INFO]	Model Name is ppo_data_GDSC_ALL_FULL_f100__Sraw_B16_D2_C2_Fold4
+2026-06-13 14:09:15,372      set_log [INFO]	Device: cuda:0 | GPU: NVIDIA H100 PCIe | CUDA 12.1
+2026-06-13 14:09:15,372      set_log [INFO]	GPU memory: 85.0 GB total
+2026-06-13 14:09:15,593      set_log [INFO]	GPU memory cap: 47% of total (~40.0 GB) for this process
+2026-06-13 14:09:15,594      set_log [INFO]	model saved directory /home/arianna/projects/PPORank/Saved/ppo_data_GDSC_ALL_FULL_f100__Sraw_B16_D2_C2_Fold4
+2026-06-13 14:09:18,410      set_log [INFO]	Load WP with dimesnion 770,100
+2026-06-13 14:09:18,410      set_log [INFO]	Load drug embedding  with dimesnion 223,100
+2026-06-13 14:09:18,410      set_log [INFO]	Sample size N  is 770, drug size M is 223, cellline features P is 770 with projection dimension is 100
+2026-06-13 14:09:18,411      set_log [INFO]	results saved file name is ./results/data/GDSC_ALL/ppo_data_GDSC_ALL_FULL_f100__Sraw_B16_D2_C2_Fold4_PPOresult.txt
+2026-06-13 14:09:19,032      set_log [INFO]	total params in PPO is 159054
+2026-06-13 14:09:19,081      set_log [INFO]	=== Training started: 1400 epochs, 16 processes, device=cuda:0 ===
+2026-06-13 14:11:13,596      set_log [INFO]	Epoch 0/1399 | train_ndcg=0.7059 test_ndcg=0.7055 | train_rew=88102.289062 test_rew=81447.718750 | loss=11522665.112758 | mem_alloc=1.6G mem_resv=2.1G | elapsed=114.5s ETA=160207s
+2026-06-13 14:13:07,921      set_log [INFO]	Epoch 1/1399 | train_ndcg=0.7201 test_ndcg=0.7209 | train_rew=89855.968750 test_rew=83165.359375 | loss=17166002.380242 | mem_alloc=1.8G mem_resv=2.3G | elapsed=114.3s ETA=159761s
+2026-06-13 14:14:58,537      set_log [INFO]	Epoch 2/1399 | train_ndcg=0.7175 test_ndcg=0.7202 | train_rew=89499.664062 test_rew=82409.632812 | loss=18616092.413043 | mem_alloc=1.8G mem_resv=2.2G | elapsed=110.6s ETA=154472s
+2026-06-13 14:16:46,753      set_log [INFO]	Epoch 3/1399 | train_ndcg=0.7042 test_ndcg=0.7113 | train_rew=86446.242188 test_rew=81025.710938 | loss=17582060.974951 | mem_alloc=1.7G mem_resv=2.2G | elapsed=108.2s ETA=151062s
+2026-06-13 14:18:41,130      set_log [INFO]	Epoch 4/1399 | train_ndcg=0.6949 test_ndcg=0.7049 | train_rew=85120.632812 test_rew=80286.546875 | loss=15075634.597800 | mem_alloc=1.8G mem_resv=2.3G | elapsed=114.4s ETA=159549s
+2026-06-13 14:20:29,919      set_log [INFO]	Epoch 5/1399 | train_ndcg=0.6932 test_ndcg=0.7030 | train_rew=84951.281250 test_rew=80262.039062 | loss=14886092.796393 | mem_alloc=1.8G mem_resv=2.3G | elapsed=108.8s ETA=151643s
+2026-06-13 14:22:21,850      set_log [INFO]	Epoch 6/1399 | train_ndcg=0.6911 test_ndcg=0.6939 | train_rew=84015.132812 test_rew=78621.210938 | loss=14603233.713520 | mem_alloc=1.8G mem_resv=2.3G | elapsed=111.9s ETA=155913s
+2026-06-13 14:24:15,561      set_log [INFO]	Epoch 7/1399 | train_ndcg=0.6805 test_ndcg=0.6848 | train_rew=82582.062500 test_rew=76691.734375 | loss=13888222.893034 | mem_alloc=1.9G mem_resv=2.2G | elapsed=113.7s ETA=158278s
+2026-06-13 14:26:06,295      set_log [INFO]	Epoch 8/1399 | train_ndcg=0.6732 test_ndcg=0.6756 | train_rew=80475.039062 test_rew=74806.937500 | loss=12845739.639129 | mem_alloc=1.8G mem_resv=2.3G | elapsed=110.7s ETA=154023s
+2026-06-13 14:28:01,277      set_log [INFO]	Epoch 9/1399 | train_ndcg=0.6586 test_ndcg=0.6591 | train_rew=78194.320312 test_rew=72154.609375 | loss=11740280.187226 | mem_alloc=1.8G mem_resv=2.3G | elapsed=115.0s ETA=159819s
+2026-06-13 14:29:54,215      set_log [INFO]	Epoch 10/1399 | train_ndcg=0.6533 test_ndcg=0.6539 | train_rew=77564.375000 test_rew=71507.914062 | loss=11426044.161417 | mem_alloc=1.8G mem_resv=2.1G | elapsed=112.9s ETA=156863s
+2026-06-13 14:31:51,195      set_log [INFO]	Epoch 11/1399 | train_ndcg=0.6480 test_ndcg=0.6467 | train_rew=76340.960938 test_rew=70331.554688 | loss=10951671.761138 | mem_alloc=1.8G mem_resv=2.2G | elapsed=117.0s ETA=162361s
+2026-06-13 14:33:44,985      set_log [INFO]	Epoch 12/1399 | train_ndcg=0.6513 test_ndcg=0.6476 | train_rew=76924.539062 test_rew=70638.890625 | loss=10411863.236615 | mem_alloc=1.8G mem_resv=2.2G | elapsed=113.8s ETA=157820s
+2026-06-13 14:35:38,726      set_log [INFO]	Epoch 13/1399 | train_ndcg=0.6430 test_ndcg=0.6433 | train_rew=74587.570312 test_rew=69893.695312 | loss=10534284.214403 | mem_alloc=1.8G mem_resv=2.2G | elapsed=113.7s ETA=157638s
+2026-06-13 14:37:33,449      set_log [INFO]	Epoch 14/1399 | train_ndcg=0.6399 test_ndcg=0.6420 | train_rew=73836.023438 test_rew=69637.648438 | loss=10419305.697828 | mem_alloc=1.8G mem_resv=2.2G | elapsed=114.7s ETA=158884s
+2026-06-13 14:39:25,301      set_log [INFO]	Epoch 15/1399 | train_ndcg=0.6400 test_ndcg=0.6421 | train_rew=73340.625000 test_rew=69682.851562 | loss=10279543.663981 | mem_alloc=1.9G mem_resv=2.3G | elapsed=111.8s ETA=154795s
+2026-06-13 14:41:18,763      set_log [INFO]	Epoch 16/1399 | train_ndcg=0.6369 test_ndcg=0.6401 | train_rew=73120.234375 test_rew=69368.601562 | loss=10566824.994543 | mem_alloc=1.8G mem_resv=2.2G | elapsed=113.5s ETA=156911s
+2026-06-13 14:43:10,153      set_log [INFO]	Epoch 17/1399 | train_ndcg=0.6380 test_ndcg=0.6403 | train_rew=73353.820312 test_rew=69353.164062 | loss=10506806.168907 | mem_alloc=1.8G mem_resv=2.2G | elapsed=111.4s ETA=153933s
+2026-06-13 14:45:04,705      set_log [INFO]	Epoch 18/1399 | train_ndcg=0.6385 test_ndcg=0.6413 | train_rew=73079.703125 test_rew=69598.906250 | loss=10498443.369473 | mem_alloc=1.8G mem_resv=2.1G | elapsed=114.5s ETA=158189s
+2026-06-13 14:46:58,313      set_log [INFO]	Epoch 19/1399 | train_ndcg=0.6368 test_ndcg=0.6398 | train_rew=72826.171875 test_rew=69207.953125 | loss=10557706.781931 | mem_alloc=1.8G mem_resv=2.1G | elapsed=113.6s ETA=156771s
+2026-06-13 14:48:53,163      set_log [INFO]	Epoch 20/1399 | train_ndcg=0.6408 test_ndcg=0.6428 | train_rew=74363.085938 test_rew=70004.117188 | loss=10419561.178685 | mem_alloc=1.8G mem_resv=2.2G | elapsed=114.8s ETA=158370s
+2026-06-13 14:50:47,256      set_log [INFO]	Epoch 21/1399 | train_ndcg=0.6367 test_ndcg=0.6366 | train_rew=73841.929688 test_rew=69383.890625 | loss=10939426.081251 | mem_alloc=1.8G mem_resv=2.2G | elapsed=114.1s ETA=157213s
+2026-06-13 14:52:43,419      set_log [INFO]	Epoch 22/1399 | train_ndcg=0.6345 test_ndcg=0.6323 | train_rew=73212.757812 test_rew=68658.914062 | loss=10514128.460043 | mem_alloc=1.8G mem_resv=2.4G | elapsed=116.2s ETA=159949s
+2026-06-13 14:54:37,936      set_log [INFO]	Epoch 23/1399 | train_ndcg=0.6317 test_ndcg=0.6311 | train_rew=72317.921875 test_rew=68462.367188 | loss=10527909.412319 | mem_alloc=1.8G mem_resv=2.4G | elapsed=114.5s ETA=157567s
+2026-06-13 14:56:29,927      set_log [INFO]	Epoch 24/1399 | train_ndcg=0.6353 test_ndcg=0.6334 | train_rew=75193.671875 test_rew=69663.906250 | loss=10205672.588963 | mem_alloc=1.8G mem_resv=2.2G | elapsed=112.0s ETA=153980s
+2026-06-13 14:58:25,000      set_log [INFO]	Epoch 25/1399 | train_ndcg=0.6248 test_ndcg=0.6242 | train_rew=71698.687500 test_rew=67588.460938 | loss=10486019.935578 | mem_alloc=1.8G mem_resv=2.2G | elapsed=115.1s ETA=158099s
+2026-06-13 15:00:18,410      set_log [INFO]	Epoch 26/1399 | train_ndcg=0.6346 test_ndcg=0.6319 | train_rew=75669.476562 test_rew=69689.773438 | loss=10299347.330535 | mem_alloc=1.8G mem_resv=2.1G | elapsed=113.4s ETA=155706s
+2026-06-13 15:02:10,264      set_log [INFO]	Epoch 27/1399 | train_ndcg=0.6331 test_ndcg=0.6296 | train_rew=74266.617188 test_rew=68529.820312 | loss=10101623.120671 | mem_alloc=1.7G mem_resv=2.1G | elapsed=111.8s ETA=153457s
+2026-06-13 15:04:02,440      set_log [INFO]	Epoch 28/1399 | train_ndcg=0.6326 test_ndcg=0.6298 | train_rew=73045.500000 test_rew=68397.992188 | loss=10889180.192125 | mem_alloc=1.8G mem_resv=2.1G | elapsed=112.2s ETA=153785s
+2026-06-13 15:05:57,186      set_log [INFO]	Epoch 29/1399 | train_ndcg=0.6377 test_ndcg=0.6331 | train_rew=75523.679688 test_rew=69920.000000 | loss=10223315.033674 | mem_alloc=1.8G mem_resv=2.2G | elapsed=114.7s ETA=157190s
+2026-06-13 15:07:49,709      set_log [INFO]	Epoch 30/1399 | train_ndcg=0.6237 test_ndcg=0.6246 | train_rew=71303.445312 test_rew=67767.617188 | loss=9851686.182022 | mem_alloc=1.8G mem_resv=2.2G | elapsed=112.5s ETA=154036s
+2026-06-13 15:09:43,309      set_log [INFO]	Epoch 31/1399 | train_ndcg=0.6309 test_ndcg=0.6317 | train_rew=75270.179688 test_rew=70491.937500 | loss=10275490.398142 | mem_alloc=1.8G mem_resv=2.1G | elapsed=113.6s ETA=155400s
+2026-06-13 15:11:35,788      set_log [INFO]	Epoch 32/1399 | train_ndcg=0.6257 test_ndcg=0.6254 | train_rew=72104.648438 test_rew=68065.375000 | loss=10208268.247050 | mem_alloc=1.8G mem_resv=2.2G | elapsed=112.5s ETA=153749s
+2026-06-13 15:13:29,992      set_log [INFO]	Epoch 33/1399 | train_ndcg=0.6313 test_ndcg=0.6300 | train_rew=74231.039062 test_rew=69609.570312 | loss=9679093.941181 | mem_alloc=1.8G mem_resv=2.2G | elapsed=114.2s ETA=155996s
+2026-06-13 15:15:23,014      set_log [INFO]	Epoch 34/1399 | train_ndcg=0.6253 test_ndcg=0.6318 | train_rew=71896.929688 test_rew=69998.992188 | loss=10102252.769732 | mem_alloc=1.8G mem_resv=2.3G | elapsed=113.0s ETA=154267s
+2026-06-13 15:17:14,198      set_log [INFO]	Epoch 35/1399 | train_ndcg=0.6224 test_ndcg=0.6281 | train_rew=70730.406250 test_rew=69872.109375 | loss=9515695.110291 | mem_alloc=1.8G mem_resv=2.3G | elapsed=111.2s ETA=151648s
+2026-06-13 15:19:07,555      set_log [INFO]	Epoch 36/1399 | train_ndcg=0.6170 test_ndcg=0.6204 | train_rew=71263.320312 test_rew=67546.445312 | loss=10163275.161660 | mem_alloc=1.8G mem_resv=2.2G | elapsed=113.4s ETA=154498s
+2026-06-13 15:20:57,024      set_log [INFO]	Epoch 37/1399 | train_ndcg=0.6284 test_ndcg=0.6247 | train_rew=72704.929688 test_rew=69289.460938 | loss=9473658.165892 | mem_alloc=1.8G mem_resv=2.2G | elapsed=109.5s ETA=149089s
+2026-06-13 15:22:50,073      set_log [INFO]	Epoch 38/1399 | train_ndcg=0.6204 test_ndcg=0.6202 | train_rew=72516.007812 test_rew=68353.140625 | loss=10646281.259236 | mem_alloc=1.9G mem_resv=2.4G | elapsed=113.0s ETA=153853s
+2026-06-13 15:24:40,025      set_log [INFO]	Epoch 39/1399 | train_ndcg=0.6325 test_ndcg=0.6247 | train_rew=73720.742188 test_rew=68752.640625 | loss=10030006.080342 | mem_alloc=1.7G mem_resv=2.1G | elapsed=109.9s ETA=149527s
+2026-06-13 15:26:33,188      set_log [INFO]	Epoch 40/1399 | train_ndcg=0.6253 test_ndcg=0.6277 | train_rew=71723.617188 test_rew=68730.812500 | loss=9724904.022900 | mem_alloc=1.8G mem_resv=2.2G | elapsed=113.2s ETA=153781s
+2026-06-13 15:28:25,654      set_log [INFO]	Epoch 41/1399 | train_ndcg=0.6144 test_ndcg=0.6164 | train_rew=70104.343750 test_rew=67326.351562 | loss=9248419.528665 | mem_alloc=1.8G mem_resv=2.2G | elapsed=112.5s ETA=152721s
+2026-06-13 15:30:16,734      set_log [INFO]	Epoch 42/1399 | train_ndcg=0.6179 test_ndcg=0.6218 | train_rew=70799.382812 test_rew=67734.304688 | loss=8492190.867688 | mem_alloc=1.8G mem_resv=2.2G | elapsed=111.1s ETA=150728s
+2026-06-13 15:32:06,877      set_log [INFO]	Epoch 43/1399 | train_ndcg=0.6072 test_ndcg=0.6121 | train_rew=69759.632812 test_rew=67062.539062 | loss=8559961.277573 | mem_alloc=1.8G mem_resv=2.1G | elapsed=110.1s ETA=149346s
+2026-06-13 15:33:59,754      set_log [INFO]	Epoch 44/1399 | train_ndcg=0.6164 test_ndcg=0.6182 | train_rew=70575.203125 test_rew=68191.476562 | loss=9697153.943978 | mem_alloc=1.8G mem_resv=2.1G | elapsed=112.9s ETA=152941s
+2026-06-13 15:35:54,242      set_log [INFO]	Epoch 45/1399 | train_ndcg=0.6120 test_ndcg=0.6153 | train_rew=70478.117188 test_rew=67922.453125 | loss=9629097.122191 | mem_alloc=1.8G mem_resv=2.2G | elapsed=114.5s ETA=155009s
+2026-06-13 15:37:46,331      set_log [INFO]	Epoch 46/1399 | train_ndcg=0.6152 test_ndcg=0.6164 | train_rew=69523.492188 test_rew=66866.273438 | loss=9658409.506148 | mem_alloc=1.8G mem_resv=2.2G | elapsed=112.1s ETA=151650s
+2026-06-13 15:39:38,597      set_log [INFO]	Epoch 47/1399 | train_ndcg=0.6087 test_ndcg=0.6129 | train_rew=69846.367188 test_rew=67251.625000 | loss=8310925.886452 | mem_alloc=1.8G mem_resv=2.1G | elapsed=112.3s ETA=151775s
+2026-06-13 15:41:31,106      set_log [INFO]	Epoch 48/1399 | train_ndcg=0.6079 test_ndcg=0.6127 | train_rew=71381.242188 test_rew=67969.757812 | loss=8830682.159531 | mem_alloc=1.8G mem_resv=2.1G | elapsed=112.5s ETA=151993s
+2026-06-13 15:42:26,221      set_log [INFO]	Epoch 49/1399 | train_ndcg=0.6161 test_ndcg=0.6167 | train_rew=69797.539062 test_rew=67387.546875 | loss=9284312.310777 | mem_alloc=1.8G mem_resv=2.1G | elapsed=55.1s ETA=74398s
+2026-06-13 15:43:09,682      set_log [INFO]	Epoch 50/1399 | train_ndcg=0.6140 test_ndcg=0.6158 | train_rew=70255.562500 test_rew=67050.031250 | loss=9077059.332257 | mem_alloc=1.8G mem_resv=2.1G | elapsed=43.5s ETA=58623s
+2026-06-13 15:43:53,864      set_log [INFO]	Epoch 51/1399 | train_ndcg=0.6221 test_ndcg=0.6275 | train_rew=71080.695312 test_rew=69042.851562 | loss=8588502.295173 | mem_alloc=1.8G mem_resv=2.2G | elapsed=44.2s ETA=59550s
+2026-06-13 15:43:53,869      set_log [INFO]	Early stopping at epoch 51 — no improvement for 50 epochs (best_ndcg=0.7209)
+2026-06-13 15:43:53,869      set_log [INFO]	=== Training complete — best_ndcg=0.7209 | total elapsed: 5678.5s ===
+num of updates is 8408, num of updates in ppo is 67375, total optimizer steps are 2156000 and num of epochs is 1400
+for a single epoch, it updates 1536 times 
+[2026-06-13 15:43:54]     Fold4 done in 5681s
+[2026-06-13 15:43:54] 
+[2026-06-13 15:43:54] >>> STEP 4: Aggregating results
+[2026-06-13 15:43:57]     Results written to results_ppo.txt  [3s]
+[2026-06-13 15:43:57] 
+[2026-06-13 15:43:57] ======================================================
+[2026-06-13 15:43:57] Pipeline complete — total elapsed: 20917s
+[2026-06-13 15:43:57] Results : results_ppo.txt
+[2026-06-13 15:43:57] Logs    : pipeline_20260613_095520.log
+[2026-06-13 15:43:57] ======================================================
