@@ -51,13 +51,18 @@ if [ -f "$FOLD0_CHECK" ]; then
         log "    MF weights already exist — skipping Step 1"
     else
         log "    Folds exist but MF missing — running --decompose only"
+        # CCLE has only 19 drugs / ~390 cells, so the MF (CaDRReS) gradient step
+        # ~1/n_K is much larger than on GDSC; lr=0.01 diverges to NaN (degenerate
+        # WP, loss prints 0.000000, PPO then gets NaN logits). lr=0.001 stabilises it.
         "$PYTHON" prepare.py --data_dir "$DATA_DIR" --Source "$SOURCE" \
-            --decompose --config configs/configC_FULL_compare.yaml
+            --decompose --lr 0.001 --config configs/configC_FULL_compare.yaml
         log "    Step 1 (decompose only) done in $(elapsed $STEP_START)s"
     fi
 else
+    # lr=0.001 (vs default 0.01): CCLE's small problem (19 drugs) makes the MF
+    # gradient step too large at 0.01 and it diverges to NaN — see note above.
     "$PYTHON" prepare.py --data_dir "$DATA_DIR" --Source "$SOURCE" \
-        --decompose --config configs/configC_FULL_compare.yaml
+        --decompose --lr 0.001 --config configs/configC_FULL_compare.yaml
     log "    Step 1 done in $(elapsed $STEP_START)s"
 fi
 
