@@ -443,10 +443,16 @@ def Pretrained_MF_split():
             Xtrain_kernel = pd.read_csv(out_dir_cv+'/Xtrain_kernel.csv', index_col=0)
             Xtest_kernel = pd.read_csv(out_dir_cv+'/Xtest_kernel.csv', index_col=0)
 
+            # Paper-faithful CaDRReS warm-start: factorize over the Pearson cell-line
+            # kernel (CaDRReS representation), not the raw essential-gene expression.
+            # Must match what PPO consumes via utils.read_FULL (also the kernel), so the
+            # pretrained WP (n_train x f) aligns with PPO's input features.
             xscaler = StandardScaler()
-            Xtrain_df = pd.DataFrame(xscaler.fit_transform(Xtrain_df), columns=Xtrain_df.columns, index=Xtrain_df.index)
-            Xtest_df = pd.DataFrame(xscaler.transform(Xtest_df), columns=Xtest_df.columns, index=Xtest_df.index)
-            Ypred_mat = Response_decompose(Ytrain_df, Xtrain_df, Ytest_df, Xtest_df, iters,
+            Xtrain_feat = pd.DataFrame(xscaler.fit_transform(Xtrain_kernel),
+                                       columns=Xtrain_kernel.columns, index=Xtrain_kernel.index)
+            Xtest_feat = pd.DataFrame(xscaler.transform(Xtest_kernel),
+                                      columns=Xtest_kernel.columns, index=Xtest_kernel.index)
+            Ypred_mat = Response_decompose(Ytrain_df, Xtrain_feat, Ytest_df, Xtest_feat, iters,
                                            lr, f, out_dir_cv, i, training=True)
             fold_elapsed = time.time() - fold_start
             if Ypred_mat is not None:

@@ -88,6 +88,14 @@ for FOLD_IDX in $(seq 0 $(( NFOLDS - 1 ))); do
         continue
     fi
 
+    # PPORank hyperparameters / architecture pinned to paper §3.1.3 (defaults in
+    # arguments.py deviate). GDSC: 16 actors (NUM_PROCESSES, = paper's "mini-batch
+    # size 16" = cell lines per update), PPO epoch K=8, γ=λ=0.95 for full-rank
+    # ranking, c1=0.5 (default), c2=0.001, 2 cross layers, deep net 128→64→32
+    # (deep_hidden_sizes + deep_out_size).
+    # NOTE: --num_mini_batch left at default (4). It sub-splits the accumulated
+    # transition buffer (steps ≈ num_processes × n_drugs ≈ 3568), NOT cell lines,
+    # so it does not map to the paper's "16"; the paper does not specify it.
     "$PYTHON" main.py \
         --num_processes "$NUM_PROCESSES" \
         --Data "$DATA_DIR" \
@@ -97,6 +105,12 @@ for FOLD_IDX in $(seq 0 $(( NFOLDS - 1 ))); do
         --normalize_y \
         --fold "$FOLD" \
         --cuda_id "$CUDA_ID" \
+        --ppo_epoch 8 \
+        --gamma 0.95 \
+        --entropy_coef 0.001 \
+        --nlayers_cross 2 \
+        --deep_hidden_sizes 128 64 \
+        --deep_out_size 32 \
         2>&1 | tee -a "$LOG_FILE"
 
     log "    $FOLD done in $(elapsed $FOLD_START)s"

@@ -20,8 +20,11 @@ fi
 
 SRC_DATA_DIR="data/GDSC_ALL"
 DATA_DIR="data/GDSC_ALL_QUICK"
-# NOTE: keep F >= 68 (deep_out_size(64)+4) — smaller values trigger a shape
+# NOTE: keep F >= deep_out_size+4 (now 32+4=36) — smaller values trigger a shape
 # mismatch in the critic's ConvValueNet pooling (see configG_FULL_quick.yaml).
+# This quick run mirrors the paper-faithful PPO flags of run_pipeline.sh
+# (K=8, gamma=0.95, c2=0.001, 2 cross layers, deep 128->64->32) so it can act as a
+# smoke-test for deep_out_size=32 + the Pearson-kernel features before the full run.
 NUM_PROCESSES=32    # GPU run: larger batches are ~free, so use them to cut batches/epoch
 F=100               # projection dimension (matches full pipeline)
 ALGO=ppo
@@ -127,6 +130,9 @@ for FOLD_IDX in $(seq 0 $(( NFOLDS - 1 ))); do
         continue
     fi
 
+    # Same paper-faithful PPO flags as run_pipeline.sh (§3.1.3), so this is a true
+    # smoke-test of that config. num_processes here is the quick value (32), not
+    # the paper's 16 — fine for a sanity check, not for reported numbers.
     "$PYTHON" main.py \
         --num_processes "$NUM_PROCESSES" \
         --Data "$DATA_DIR" \
@@ -138,6 +144,12 @@ for FOLD_IDX in $(seq 0 $(( NFOLDS - 1 ))); do
         --normalize_y \
         --fold "$FOLD" \
         --cuda_id "$CUDA_ID" \
+        --ppo_epoch 8 \
+        --gamma 0.95 \
+        --entropy_coef 0.001 \
+        --nlayers_cross 2 \
+        --deep_hidden_sizes 128 64 \
+        --deep_out_size 32 \
         2>&1 | tee -a "$LOG_FILE"
 
     log "    $FOLD done in $(elapsed $FOLD_START)s"

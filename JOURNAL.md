@@ -625,11 +625,160 @@ the paper's reported PPORank-vs-EN gap (possible reproduction discrepancy).
 
 ---
 
+## CaDRReS aggregated → 4-method Exp-1 table (2026-06-13)
+
+Ran `python results.py --config configs/configG_FULL_compare.yaml` (no `--k`) on the
+server. CaDRReS `.npz` (written by MF pretrain) aggregated alongside ppo/EN/KRR. Also
+set `k_max: [223,26]` in the compare config so the full-rank label reads `rank_223`
+(NDCG@223 == NDCG@265 numerically — DCG stops at the 223 available drugs). Full
+4-method comparison, GDSC FULL, 5-fold CV, f=100, 223 drugs:
+
+| Method | NDCG@1 | NDCG@5 | NDCG@10 | NDCG@full | Prec@1 | Prec@5 | Prec@10 |
+|--------|----:|----:|----:|----:|----:|----:|----:|
+| **EN** | **0.437** | **0.500** | **0.529** | **0.778** | **0.201** | **0.300** | **0.313** |
+| PPORank | 0.356 | 0.356 | 0.389 | 0.709 | 0.145 | 0.177 | 0.194 |
+| CaDRReS | 0.247 | 0.282 | 0.308 | 0.668 | 0.073 | 0.118 | 0.140 |
+| KRR | 0.218 | 0.239 | 0.267 | 0.649 | 0.068 | 0.096 | 0.126 |
+
+### Revised diagnosis — PPO *does* beat CaDRReS; the anomaly is EN
+
+Correcting the earlier "RL adds nothing" framing: **PPO (0.709) > its CaDRReS warm-start
+(0.668)** by +0.041 full-rank (+0.11 at NDCG@1). The RL phase *does* contribute; it just
+saturates early (peak ep ~15–20) and stays far below EN. So the open problem is two-fold:
+
+- **(a) EN is anomalously strong** — dominates at *every* k, including NDCG@1 where a
+  ranking method should win. Paper has EN ≈ CaDRReS ≈ PPORank (all close on CCLE); here
+  EN is +0.07 over PPO. Suspect a possible advantage in our EN eval (per-drug regression
+  on the same fold) — worth auditing `baselines.py` for any train/test leakage or a
+  metric mismatch vs PPO's eval.
+- **(b) Ordering vs paper**: paper GDSC = PPORank > CaDRReS > rest; ours = EN > PPORank >
+  CaDRReS > KRR. PPORank drops to 2nd, CaDRReS to 3rd.
+
+**CaDRReS dimension mismatch**: paper sets CaDRReS latent dim = **10**; our MF pretrain runs
+at **f=100** (to match PPO's projection). This likely depresses our CaDRReS (3rd instead of
+paper's 2nd) and is a known deviation to flag in the report.
+
+Still missing for the full Fig-3 set: **KRL** and **SRMF**.
+
+---
+
+## Feature-representation bug found + fixed (2026-06-13)
+
+Systematic paper-vs-run audit of Exp 1 surfaced a **critical deviation**: PPORank and the
+CaDRReS warm-start were trained on the **raw 1610 essential-gene expression** (z-scored),
+not the **Pearson cell-line similarity kernel** the paper/CaDRReS use (§3.1.1, ref 13).
+
+### Root cause
+
+`prepare.py` builds the Pearson kernel (`kernel_feature_df`, cell-line × cell-line) and
+saves it per fold as `Xtrain_kernel.csv` / `Xtest_kernel.csv`, but the `Data_All=True`
+branch writes the **raw essential-gene matrix** into `Xtrain_rawDf.csv` (line ~247 uses `X`,
+which at line 172 is the gene-expression subset — not the kernel). The `Data_All=False`
+branch instead sets `X` = the precomputed kernel (line 229), so the *same* `Xtrain_rawDf.csv`
+holds different things in the two branches. Consumers:
+
+- PPO → `utils.read_FULL` reads `Xtrain_rawDf.csv` ⇒ got raw genes (P=1610).
+- CaDRReS MF pretrain → `prepare.py` loaded `Xtrain_kernel.csv` (line 443) but **passed the
+  raw genes** to `Response_decompose` (line 449).
+- KRR → kernel ✓ ; EN → raw genes ✓ (matches paper's per-drug EN on gene expression).
+
+This explains the anomalies: EN looked strong (EN-on-genes = paper's EN), while PPO/CaDRReS
+ran on a non-paper representation (raw genes, P=1610), inflating the reward scale (~85k) and
+depressing their ranking.
+
+### Fix (consumer-side, keeps EN on genes / KRR on kernel)
+
+- `utils.read_FULL` + `read_PROP` (GDSC_ALL branch): read `Xtrain_kernel.csv` /
+  `Xtest_kernel.csv` instead of `..._rawDf.csv`. (`--ess_genes_fn` is not passed in the PPO
+  command, so no gene-name filter to break on kernel columns.)
+- `prepare.py` MF pretrain: scale and pass `Xtrain_kernel`/`Xtest_kernel` to
+  `Response_decompose` (was passing the raw-gene `Xtrain_df`).
+- Net effect: PPO and CaDRReS now use the kernel (P = n_train ≈ 769, WP = 769×f), aligned;
+  EN unchanged (genes), KRR unchanged (kernel). `prepare.py` CV split untouched — kernel
+  files already exist, only MF pretrain + PPO need re-running.
+
+### Re-run procedure (server)
+
+Delete stale MF weights + PPO results to defeat the skip-if-done guards, then re-run:
+
+```bash
+rm -rf data/GDSC_ALL/CV/FULL/Fold*/100Dim            # MF weights → force re-pretrain on kernel
+rm -f  results/data/GDSC_ALL/FULL/100Dim/CaDRRes/CaDRRes_*.npz
+rm -f  results/data/GDSC_ALL/FULL/100Dim/ppo/ppo_*.npz
+rm -rf Saved/ppo_data_GDSC_ALL_FULL_*                # old checkpoints
+bash run_pipeline.sh                                 # STEP2 decompose-only + STEP3 PPO + STEP4
+python results.py --config configs/configG_FULL_compare.yaml   # 4-method table
+```
+
+EN/KRR results are unaffected and need not be recomputed.
+
+---
+
+## PPORank hyperparameter/architecture audit vs §3.1.3 (2026-06-13)
+
+Cross-checked the paper's PPORank spec (§3.1.3) against `arguments.py` defaults — and the
+defaults ARE what ran, since `run_pipeline.sh`'s `main.py` call passes only `num_processes,
+Data, analysis, algo, f, normalize_y, fold, cuda_id` (everything else = default). Result:
+**the GDSC run was NOT paper-faithful on the PPO side either.**
+
+### PPO hyperparameters
+
+| Param (code) | Paper §3.1.3 | Ran (default) | Status |
+|---|---|---|---|
+| actors `num_processes` | 16 (GDSC) | 16 | ✓ |
+| PPO epoch K `ppo_epoch` | 8 | 4 | ❌ |
+| mini-batch size | 16 | ≈ T//`num_mini_batch` = 223//4 ≈ 55 | ❌ |
+| clip ε `clip_param` | tune {0.1,0.2,0.3} | 0.2 | ~ok (in range) |
+| λ `gae_lambda` | 0.95 (full-rank) | 0.95 | ✓ |
+| γ `gamma` | 0.95 (full-rank) | 0.99 | ❌ |
+| c1 `value_loss_coef` | 0.5 | 0.5 | ✓ |
+| c2 `entropy_coef` | 0.001 | 0 | ❌ |
+
+**Mini-batch — resolved as NOT a deviation.** Traced the rollout: the DataLoader batches
+`num_processes`=16 cell lines (main.py:120); `rollouts.steps` *accumulates* every valid
+ranking step across them (storage.py:97,181) so at update time `batch_size ≈ 16 × n_drugs ≈
+3568`, and `feed_forward_generator` splits it into `num_mini_batch` chunks (≈892 transitions
+at default 4). So `num_mini_batch` sub-splits the transition buffer, NOT cell lines, and does
+NOT map to the paper's "mini-batch size 16" — which corresponds to the 16 cell lines per
+update (= `num_processes`, already matched). Left `num_mini_batch` at default 4.
+
+### Architecture (Deep & Cross actor)
+
+| Param | Paper | Ran | Status |
+|---|---|---|---|
+| cross layers `nlayers_cross` | 2 | 1 | ❌ |
+| deep net | 3 layers 128→64→32 | 256→128→64 (`deep_hidden_sizes=[256,128]`, `deep_out_size=64`) | ❌ |
+| mini-batch (cell lines/update) | 16 | 16 (`num_processes`) | ✓ (see note above) |
+
+`DeepNet(input,out,n_layers,hidden_sizes)` (DNN_models.py:90) builds `Linear(x0,h[0])→…→
+Linear(h[-1],out)`. To match the paper: `deep_hidden_sizes=[128,64]`, `deep_out_size=32`
+(keep `nlayers_deep=2`). ⚠️ `deep_out_size` feeds the critic size + the `ConvValueNet`
+pooling/reshape constraint (journal note: f ≥ deep_out_size+4); 32 ⇒ f≥36, fine at f=100,
+but must be smoke-tested.
+
+### Unclear / data-driven
+- **`f` (MF/projection dim)**: paper states CaDRReS latent = 10 but does NOT give PPORank's
+  `f` explicitly; we use 100. Possible deviation — flag, can't resolve from text.
+- **T** (drugs/trajectory): paper says 265 (GDSC); ours = M = 223 (post toxic filter). Data-driven.
+- **lr / seed**: not specified in paper (lr 3e-4, seed default).
+
+### Fix APPLIED to `run_pipeline.sh` main.py call (GDSC), f kept at 100
+`--ppo_epoch 8  --gamma 0.95  --entropy_coef 0.001  --nlayers_cross 2
+--deep_hidden_sizes 128 64  --deep_out_size 32`
+(num_processes 16 unchanged; `num_mini_batch` left at default 4 — see mini-batch note above.)
+⚠️ `deep_out_size 32` must be smoke-tested vs the `ConvValueNet` reshape (f=100 ⇒ f≥36 ok).
+Still TODO before the real re-run: smoke-test, then the feature-fix re-run procedure.
+
+---
+
 ## Open issues / to verify
 
 | Issue | Priority | Notes |
 |-------|----------|-------|
-| **PPO < EN, RL phase stalls** | High | PPORank 0.709 vs EN 0.778 (223-drug run). test_ndcg peaks at ep ~5–20 then early-stops; loss flat → RL not improving over MF warm-start. Check advantage/reward normalization, actor LR/entropy; compare to paper's PPO-vs-EN gap |
+| **PPO hyperparams ≠ paper §3.1.3** | ✅ fixed (pending smoke-test) | Run used defaults: K=4→8, γ=0.99→0.95, c2=0→0.001, cross layers 1→2, deep 256→128→64 ⇒ 128→64→32. Applied in `run_pipeline.sh`. mini-batch already ok (num_processes=16). Smoke-test `deep_out_size=32` then re-run |
+| **EN anomalously strong** | High | EN 0.778 dominates all k incl. NDCG@1 (0.437) where a ranking method should win; paper has EN≈CaDRReS≈PPORank. Audit `baselines.py` EN eval for train/test leakage or metric mismatch vs PPO's eval |
+| **PPO saturates early** | High | PPORank 0.709 beats its CaDRReS warm-start (0.668, +0.041) but plateaus at ep ~15–20 and stays below EN. Check advantage/reward normalization, actor LR/entropy |
+| **CaDRReS dim mismatch** | Medium | Paper sets CaDRReS latent dim=10; our MF pretrain uses f=100 (matches PPO). Likely why our CaDRReS is 3rd (0.668) not 2nd. Deviation to flag in report |
 | **KRL baseline (Exp 1)** | High | Not in released code; must implement (RBF kernel over all 17737 GEX genes, λ×γ tuning) like EN/KRR in `baselines.py`. CaDRReS only needs aggregation (`.npz` already written by MF pretrain) |
 | **SRMF baseline (Exp 1)** | Low | Paper lists it in Fig 3 but says it can't predict unseen cell lines; scoring method under 5-fold CV unclear — verify before attempting |
 | **PPO-w/o (Exp 7/8 only)** | Medium | Reward ablation (drop positive eval signal), simulations only — NOT Exp 1, NOT the `--pretrain` flag. Implement when doing simulations |
