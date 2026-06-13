@@ -548,10 +548,61 @@ copy from the Mac and verifying `md5sum = fce179909a9b518a385e16ee619ebd4d`.
 
 ---
 
+## Full 223-drug run + EN/KRR baselines (2026-06-12)
+
+First end-to-end run on the **223-drug** set (toxic filter active) with the whole
+pipeline succeeding, STEP 4 included. Total elapsed **28113s (~7.8h)** on the H100:
+Step 1 skipped (`GDSC_GEX.npz` present), Step 2 (CV split + MF pretrain) 1208s, Step 3
+(5-fold PPO) the bulk, Step 4 (aggregation) 2s → `results_ppo.txt`. EN/KRR baselines
+ran in a separate `baselines.py` job (config `configG_FULL_compare.yaml`, val_frac 0.2).
+
+### PPORank (5-fold CV, FULL, f=100, 223 drugs, essential genes)
+
+| Metric | Mean (5 folds) | Per-fold |
+|--------|---------------|----------|
+| NDCG@1 | 0.356 | 0.331 / 0.348 / 0.318 / 0.368 / 0.415 |
+| NDCG@5 | 0.356 | 0.356 / 0.347 / 0.328 / 0.378 / 0.372 |
+| NDCG@10 | 0.389 | 0.394 / 0.388 / 0.361 / 0.409 / 0.392 |
+| NDCG@full | 0.709 | 0.712 / 0.707 / 0.693 / 0.719 / 0.713 |
+| Precision@1 | 0.145 | — |
+| Precision@5 | 0.177 | — |
+| Precision@10 | 0.194 | — |
+
+Per-fold `best_ndcg` (training logs): 0.7127 / 0.7076 / 0.6940 / 0.7184 / 0.7122,
+matching the aggregated full-rank NDCG (best-epoch predictions under early stopping).
+
+### Baselines (same folds, f=100)
+
+| Method | Test NDCG mean | Per-fold | Best hyperparams |
+|--------|---------------|----------|------------------|
+| **EN** | **0.778** | 0.783 / 0.778 / 0.770 / 0.786 / 0.774 | α=0.1, l1_ratio 0.5–0.9 |
+| **KRR** | 0.649 | 0.648 / 0.640 / 0.654 / 0.650 / 0.653 | α=10–100 |
+
+EN training is slow (~2650s/fold, grid over α × l1_ratio); KRR ~6s/fold.
+
+### Key finding — PPO underperforms EN, RL phase stalls
+
+**Ordering: EN (0.778) > PPO (0.709) > KRR (0.649).** PPO is ~0.07 NDCG below the
+Elastic Net baseline. The training dynamics explain it: on **every** fold `test_ndcg`
+peaks within the first ~5–20 epochs and then drifts down, so early stopping fires at
+epoch 54–70 with the best checkpoint coming from very early (e.g. Fold 3 best at ep 8,
+Fold 2 at ~ep 4). `loss` stays flat in the ~2.3–2.9e7 band throughout. → the PPO/RL
+phase is **not improving over the MF (CaDRReS) warm-start** — at best holding, at worst
+slowly eroding it. This contradicts the paper, where PPORank is the top method.
+
+Candidate causes to investigate next: (1) advantage/reward scaling — rewards ~85k,
+loss ~2e7, advantages may be unnormalized so gradient is dominated by scale; (2) actor
+LR / entropy too high (peak-then-decay is classic over-stepping); (3) confirm against
+the paper's reported PPORank-vs-EN gap (possible reproduction discrepancy).
+
+---
+
 ## Open issues / to verify
 
 | Issue | Priority | Notes |
 |-------|----------|-------|
+| **PPO < EN, RL phase stalls** | High | PPORank 0.709 vs EN 0.778 (223-drug run). test_ndcg peaks at ep ~5–20 then early-stops; loss flat → RL not improving over MF warm-start. Check advantage/reward normalization, actor LR/entropy; compare to paper's PPO-vs-EN gap |
+| **KRL / CaDRRes baselines** | Medium | Exp 1 comparison still missing these two methods; only EN/KRR run so far (`configG_FULL_compare.yaml`) |
 | **MET modality** | Low | Cannot reproduce GEX+MET experiment (Figure 5 incomplete) — GDSC MET permanently lost |
 | **`prepare.py` not yet run** | High | Must run before any training; no fold splits found in `data/GDSC_ALL/CV/` |
 | **Toxic drug filtering** | ✅ resolved (GDSC) | GDSC filtered 265→223 via CaDRReS `GDSC_drugMedianGE0.txt` + new filter in `prepare.py` (see section above). CCLE (24→19) still to apply when CCLE config is created. Criterion differs from paper's Iorio+PubChem description — documented caveat |
