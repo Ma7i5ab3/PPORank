@@ -208,6 +208,14 @@ def Split_Data():
         ss_df.index = ss_df.index.astype(str)  # cell_line names
         # Convert IC50 to sensitivity score, -log(IC50)
         ss_df *= -1
+        # Shift to non-negative sensitivity, matching the GDSC pipeline
+        # (load_dataset.py: IC50_norm = IC50_norm - IC50_norm_min). NDCG's
+        # 2**s - 1 gain requires relevance >= 0; CCLE's raw -log(IC50) has large
+        # negatives (min ~-13.5), making per-cell IDCG < 0 and NDCG blow up (>1).
+        ss_min = np.nanmin(ss_df.values)
+        ss_df = ss_df - ss_min
+        logger.info("CCLE sensitivity shifted to non-negative: min {:.3f} -> 0.0, max {:.3f}".format(
+            ss_min, np.nanmax(ss_df.values)))
         drug_list_fname = os.path.join(directory, "{}".format(args.Source)+args.drug_list_fname)
         selected_drugs = list(pd.read_csv(drug_list_fname, header=None)[0].values.astype(str))
         drug_list = list(ss_df.columns)  # 265 drugs, after delete from median 1um, has 223 drugs
