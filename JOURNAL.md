@@ -981,6 +981,63 @@ python results.py --config configs/configC_FULL_compare.yaml
 
 ---
 
+## Paper-faithful PPORank run — feature+hp fixes resolved (2026-06-13, run `pipeline_20260613_095520.log`)
+
+First full GDSC run with **both** prior fixes active: Pearson kernel features (not raw genes)
+**and** the §3.1.3-aligned PPO hyperparameters/architecture. This answers the open question
+"is PPORank too low vs the paper, or was it just the feature/hyperparameter bugs?".
+
+### Run provenance (verified in the log)
+
+- 223 drugs (`M=223`), **Pearson cell-line kernel** (`P=769` = n_train, not the 1610 raw genes).
+- `f=100`; MF warm-start loaded as `WP 769×100` ⇒ CaDRReS pre-decomposition is on the kernel too
+  (STEP 2 skipped as already regenerated on kernel — weights are kernel-based, shape confirms it).
+- Paper hyperparams active (`run_pipeline.sh` flags): `ppo_epoch 8`, `γ=0.95`, `entropy_coef 0.001`,
+  `nlayers_cross 2`, deep net 128→64→32. Total params **158 954** (was 299 132 with the old arch).
+- Early stopping fired on all 5 folds; `mem_alloc≈1.8G` (fragmentation fix holds). Total ~20 917s.
+
+### PPORank results (5-fold CV, FULL, f=100, 223 drugs, kernel features, paper hp)
+
+| Metric | **New** (kernel + paper hp) | Old 223 (raw genes + defaults) |
+|--------|---------------------------:|-------------------------------:|
+| NDCG@1 | 0.363 | 0.356 |
+| NDCG@5 | **0.383** | 0.356 |
+| NDCG@10 | **0.410** | 0.389 |
+| NDCG@full | 0.718 | 0.709 |
+| Precision@1 | 0.150 | 0.145 |
+| Precision@5 | 0.204 | 0.177 |
+| Precision@10 | 0.208 | 0.194 |
+
+Per-fold full-rank `best_ndcg`: 0.7142 / 0.7227 / 0.7034 / 0.7247 / 0.7209 → mean **0.718**
+(matches the aggregated `rank_265` in `results_ppo.txt`: best-epoch predictions under early stopping).
+
+### Conclusion — feature/hp were NOT the cause of the gap
+
+- The fixes **improved top-k** (NDCG@5 +0.027, @10 +0.021; Prec@5/@10 +0.03/+0.01) — consistent with
+  PPO now training on the correct representation + architecture.
+- But **full-rank NDCG stayed ~0.72**, it did NOT climb toward EN's ~0.78.
+- Ordering: **PPORank (0.718) > CaDRReS warm-start (~0.668) > KRR (0.649), but < EN (0.778).**
+  The RL phase *does* contribute (beats its warm-start) but **saturates early** (peak ep ~30–50) and
+  does not reach EN.
+- **Claim 1 is NOT reproduced on GDSC**: the paper has PPORank as the top method; here EN beats it by
+  ~0.06 full-rank. Feature representation and §3.1.3 hyperparameters are now ruled OUT as the cause.
+  Remaining candidate explanations (to flag in the report): `f=100` vs the paper's CaDRReS latent
+  dim 10 (forced by the `f ≥ deep_out_size+4` critic constraint), unspecified reward/advantage
+  scaling details, and the missing KRL/SRMF columns in the final Exp-1 table.
+
+### 4-method comparison table — re-aggregation pending (must run on the server)
+
+The per-fold `.npz` (ppo/CaDRRes/EN/KRR/KRL) live on the H100 server, not locally, so `results.py`
+must be re-run there to refresh CaDRReS (now on the kernel warm-start) alongside EN/KRR/KRL:
+
+```bash
+python results.py --config configs/configG_FULL_compare.yaml   # no --k → full table
+```
+
+Table to be filled in once the server output is available (replaces the 2026-06-13 4-method table above).
+
+---
+
 ## Open issues / to verify
 
 | Issue | Priority | Notes |

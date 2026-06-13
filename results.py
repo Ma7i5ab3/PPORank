@@ -120,7 +120,9 @@ def get_result(
                     result_i = np.load(filename_i)
 
                     #full_rank = True if ratio == 1.0 else False
-                    metric10i[i, j] = ndcg(result_i['Y_true'], result_i['Y_pred'], k)
+                    # ndcg() returns a per-cell-line array; reduce to a scalar so
+                    # the best (lambda, gamma) can be selected by mean NDCG@k.
+                    metric10i[i, j] = np.nanmean(ndcg(result_i['Y_true'], result_i['Y_pred'], k))
 
             param_idx = np.where(metric10i == np.max(metric10i))
             l, g = krl_lambdas[param_idx[0][0]], krl_gammas[param_idx[1][0]]
